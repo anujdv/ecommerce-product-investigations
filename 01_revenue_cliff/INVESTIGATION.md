@@ -516,11 +516,11 @@ These safeguards address both sides of the incident:
 
 ## Conclusion
 
-May 13 had a clear spike in payment failures.
+May 13 experienced a sharp decline in realized revenue, driven primarily by a large increase in payment failures. The failure spike was concentrated in UPI, where the failure rate reached 71.79% compared with 2.22% on May 12. Multiple gateways handling UPI transactions were affected, and GATEWAY_TIMEOUT was the dominant failure reason.
 
-The failures were not limited to one gateway. Razorpay, PayU, Stripe and Cash all showed a large increase in failure rates on the same day. The main error was `GATEWAY_TIMEOUT`, with 168 such failed transactions.
+The incident was concentrated approximately between 9:00 AM and 4:00 PM, with recovery by 5:00 PM. In total, 134 orders were linked to at least one gateway timeout, representing ₹8,66,262.50 in affected order value.
 
-These timeouts were linked to 134 failed orders worth ₹8,66,262.50.
+The available data identifies the affected payment method, gateways, error type and incident window, but does not reveal the underlying technical cause of the timeout.
 
 Based on this, the payment system looks like the main reason behind the drop in revenue on May 13. Since the same timeout happened across multiple gateways, this looks more like a shared payment infrastructure issue than a problem with one gateway.
 
