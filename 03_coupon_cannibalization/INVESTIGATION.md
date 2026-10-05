@@ -13,9 +13,17 @@ We need to settle the marketing vs finance debate by analyzing coupon redemption
 
 ## 1. Baseline Analysis
 
+
 I started by mapping the relationships:
 
 **Customers → Segment Memberships → Customer Segments**
+
+```sql
+SELECT
+	*
+FROM
+	ecom.customer_segments ;
+```
 
 The `customer_segments` table defines 10 segments:
 
@@ -44,6 +52,23 @@ The `customer_segments` table defines 10 segments:
 
 Querying orders → customers → segment memberships → segments:
 
+```sql
+SELECT
+	cs.segment_name,
+	count(*) filter (WHERE o.applied_coupon_id IS NOT NULL) as orders_with_coupons,
+	count(distinct o.order_id) as total_orders,
+	round((100.0*(count(*) filter (WHERE o.applied_coupon_id IS NOT NULL)) / count(distinct o.order_id)),2) as coupon_redemption_rate
+FROM
+	ecom.orders o join ecom.customers c on o.customer_id = c.customer_id
+	join ecom.segment_memberships sm on c.customer_id = sm.customer_id
+	AND o.created_at BETWEEN sm.valid_from AND sm.valid_to
+	join ecom.customer_segments cs on sm.segment_id = cs.segment_id
+group BY
+	cs.segment_name
+order by 
+	coupon_redemption_rate;
+```
+
 | segment_name   | orders_with_coupons | total_orders | coupon_redemption_rate |
 |----------------|----------------------|--------------|------------------------|
 | New Customer   | 63                   | 309          | 20.39                  |
@@ -67,7 +92,34 @@ This suggests coupons are being used broadly, not strategically.
 I collapsed the 10 segments into two meta‑groups:
 
 - **Incremental** → New, Window Shopper, At Risk, Churned  
-- **Cannibalization** → Active Buyer, Loyal, Champion, Big Spender, Premium, Coupon Hunter  
+- **Cannibalization** → Active Buyer, Loyal, Champion, Big Spender, Premium, Coupon Hunter
+
+
+```sql
+SELECT
+    CASE 
+        WHEN cs.segment_name IN ('New Customer','Window Shopper','At Risk','Churned')
+            THEN 'Incremental'
+        WHEN cs.segment_name IN ('Active Buyer','Loyal','Champion','Big Spender','Premium','Coupon Hunter')
+            THEN 'Cannibalization'
+    END AS meta_group,
+    COUNT(*) FILTER (WHERE o.applied_coupon_id IS NOT NULL) AS orders_with_coupons,
+    COUNT(DISTINCT o.order_id) AS total_orders,
+    ROUND(
+        100.0 * COUNT(*) FILTER (WHERE o.applied_coupon_id IS NOT NULL) 
+        / NULLIF(COUNT(DISTINCT o.order_id),0), 2
+    ) AS coupon_redemption_rate
+FROM ecom.orders o
+JOIN ecom.customers c 
+    ON o.customer_id = c.customer_id
+JOIN ecom.segment_memberships sm 
+    ON c.customer_id = sm.customer_id
+    AND o.created_at BETWEEN sm.valid_from AND sm.valid_to
+JOIN ecom.customer_segments cs 
+    ON sm.segment_id = cs.segment_id
+GROUP BY meta_group;
+
+```
 
 | meta_group      | orders_with_coupons | total_orders | coupon_redemption_rate |
 |-----------------|----------------------|--------------|------------------------|
@@ -80,6 +132,26 @@ Volume split: 62% cannibalization vs 38% incremental.
 ---
 
 ## 4. Net Impact Analysis
+
+```sql
+SELECT
+    CASE 
+        WHEN cs.segment_name IN ('New Customer','Window Shopper','At Risk','Churned')
+            THEN 'Incremental'
+        ELSE 'Cannibalization'
+    END AS meta_group,
+    AVG(o.total) FILTER (WHERE o.applied_coupon_id IS NOT NULL) AS avg_coupon_order_value,
+    AVG(o.total) FILTER (WHERE o.applied_coupon_id IS NULL) AS avg_non_coupon_order_value,
+    COUNT(*) FILTER (WHERE o.applied_coupon_id IS NOT NULL) AS coupon_orders,
+    COUNT(*) FILTER (WHERE o.applied_coupon_id IS NULL) AS non_coupon_orders
+FROM ecom.orders o
+JOIN ecom.customers c ON o.customer_id = c.customer_id
+JOIN ecom.segment_memberships sm ON c.customer_id = sm.customer_id
+    AND o.created_at BETWEEN sm.valid_from AND sm.valid_to
+JOIN ecom.customer_segments cs ON sm.segment_id = cs.segment_id
+GROUP BY meta_group;
+
+```
 
 Comparing coupon vs non‑coupon orders:
 
