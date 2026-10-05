@@ -443,7 +443,7 @@ Based on the hourly data, the main incident window was approximately 9:00 AM to 
 The hourly analysis identifies the affected window, but it does not provide the exact minute when the incident started or ended.
 
 
-## 6. Business Impact
+## 7. Business Impact
 
 I then checked which orders were linked to the gateway timeout failures.
 
@@ -487,7 +487,7 @@ The total value of these orders was ₹8,66,262.50, and all of them had a final 
 I am treating this as affected order value and not confirmed lost revenue, since I cannot tell from the available data if any of these customers later placed another successful order.
 
 ---
-## 7. Monday Morning Actions
+## 8. Monday Morning Actions
 
 Based on the investigation, I would recommend two safeguards to detect and mitigate a similar incident.
 
