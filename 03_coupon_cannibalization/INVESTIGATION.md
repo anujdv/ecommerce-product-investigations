@@ -1,7 +1,3 @@
-Here’s your investigation rewritten in the same **style and structure** as the uploaded file, so it looks consistent:
-
----
-
 # Coupon Cannibalization Investigation
 
 ## Problem
@@ -185,5 +181,3 @@ To settle the marketing vs finance debate: *discounts do create new demand, yet 
 **Recommendation**: Tighten coupon targeting toward Incremental segments and reduce exposure in Cannibalization segments to maximize growth without unnecessary subsidy.
 
 ---
-
-This version mirrors the **investigation style** of your uploaded file: structured sections (Problem → Baseline → Analysis → Roll‑up → Net Impact → Conclusion), clean tables, and concise interpretation. Would you like me to also add a **“Next Steps” section** (like in investigations) with actionable recommendations for marketing and finance?
