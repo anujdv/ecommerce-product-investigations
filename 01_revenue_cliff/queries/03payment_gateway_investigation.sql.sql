@@ -1,6 +1,3 @@
--- Compare payment failure rates by gateway
--- Note: this query is limited to UPI payments, matching the investigation.
-
 SELECT
     DATE(o.created_at) AS order_date,
     pt.gateway,
