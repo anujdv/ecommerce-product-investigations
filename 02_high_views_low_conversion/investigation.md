@@ -297,8 +297,8 @@ The ratio is global: each product's share of all product views divided by its sh
 
 ### Results: requested category shortlist (global calculation)
 
-| Category | Rank | Product ID | Product | Views | Orders | View share (%) | Purchase share (%) | Ratio |
-| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| category_name | category_rank | product_id | product_name | view_count | order_count | view_share_pct | purchase_share_pct | view_to_purchase_ratio |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Accessories | 1 | 127 | Ivory & Oak Classic Canvas Tote | 263 | 4 | 0.17 | 0.01 | 15.08 |
 | Accessories | 2 | 2,475 | Ivory & Oak Vintage Canvas Tote | 180 | 4 | 0.11 | 0.01 | 10.32 |
 | Accessories | 3 | 1,083 | Mehr Classic Beanie | 134 | 4 | 0.08 | 0.01 | 7.68 |
@@ -329,6 +329,46 @@ The ratio is global: each product's share of all product views divided by its sh
 | Jackets | 3 | 924 | Dhaaga Works Oversized Biker Jacket | 142 | 7 | 0.09 | 0.02 | 4.65 |
 | Jackets | 4 | 2,213 | Kosha Co. All-Weather Puffer Jacket | 239 | 16 | 0.15 | 0.04 | 3.43 |
 | Jackets | 5 | 950 | Featherlite Sherpa-Lined Bomber Jacket | 280 | 25 | 0.18 | 0.07 | 2.57 |
+| Jeans | 1 | 1,254 | Windrose Distressed Relaxed Jeans | 611 | 11 | 0.39 | 0.03 | 12.74 |
+| Jeans | 2 | 703 | Strideway Distressed Straight Jeans | 168 | 4 | 0.11 | 0.01 | 9.63 |
+| Jeans | 3 | 1,200 | Amara Beauty Mid-Rise High-Rise Jeans | 707 | 19 | 0.45 | 0.05 | 8.53 |
+| Jeans | 4 | 3,953 | AeroBeat Essentials Distressed Slim Jeans | 244 | 10 | 0.15 | 0.03 | 5.59 |
+| Jeans | 5 | 2,084 | Amara Beauty Raw Denim High-Rise Jeans | 254 | 12 | 0.16 | 0.03 | 4.85 |
+| Kitchen | 1 | 3,257 | Silverbirch Works Stoneware Coffee French Press | 972 | 6 | 0.61 | 0.02 | 37.15 |
+| Kitchen | 2 | 3,778 | Dhaaga Works Pro Nonstick Tawa | 225 | 5 | 0.14 | 0.01 | 10.32 |
+| Kitchen | 3 | 2,839 | Onyx Labs House Heritage Storage Jar Set | 263 | 6 | 0.17 | 0.02 | 10.05 |
+| Kitchen | 4 | 2,771 | Loom & Ladle Supply Stainless Cast Iron Skillet | 244 | 10 | 0.15 | 0.03 | 5.59 |
+| Kitchen | 5 | 2,618 | Strideway Collective Stainless Nonstick Tawa | 212 | 11 | 0.13 | 0.03 | 4.42 |
+| Makeup | 1 | 801 | Indigo Lane Origins Longwear Eyeshadow Palette | 2,644 | 8 | 1.67 | 0.02 | 75.78 |
+| Makeup | 2 | 2,883 | Suta Threads Velvet Kajal | 4,334 | 14 | 2.74 | 0.04 | 70.98 |
+| Makeup | 3 | 116 | Saanjh Velvet Matte Lipstick | 235 | 3 | 0.15 | 0.01 | 17.96 |
+| Makeup | 4 | 1,519 | Zephyr & Co Co. Weightless Blush | 535 | 7 | 0.34 | 0.02 | 17.52 |
+| Makeup | 5 | 3,028 | Mistral Velvet Compact Powder | 490 | 13 | 0.31 | 0.04 | 8.64 |
+| Shoes | 1 | 234 | Loom & Ladle Flex Sandals | 636 | 20 | 0.4 | 0.06 | 7.29 |
+| Shoes | 2 | 2,935 | Rustique Pro Slip-Ons | 218 | 7 | 0.14 | 0.02 | 7.14 |
+| Shoes | 3 | 2,766 | TickTone Essentials Leather Derby Shoes | 146 | 13 | 0.09 | 0.04 | 2.58 |
+| Shoes | 4 | 3,456 | Mirae Pro Derby Shoes | 132 | 12 | 0.08 | 0.03 | 2.52 |
+| Shoes | 5 | 2,182 | Everbloom Leather Running Shoes | 156 | 18 | 0.1 | 0.05 | 1.99 |
+| Skincare | 1 | 147 | Onyx Labs Niacinamide Sunscreen SPF 50 | 292 | 7 | 0.18 | 0.02 | 9.56 |
+| Skincare | 2 | 1,413 | Solstice Supply Aloe Face Wash | 346 | 14 | 0.22 | 0.04 | 5.67 |
+| Skincare | 3 | 1,615 | Raaga Brightening Vitamin C Serum | 129 | 6 | 0.08 | 0.02 | 4.93 |
+| Skincare | 4 | 982 | TrueNorth Saffron Sunscreen SPF 50 | 122 | 6 | 0.08 | 0.02 | 4.66 |
+| Skincare | 5 | 3,308 | Patang Craft Hydrating Face Mist | 159 | 10 | 0.1 | 0.03 | 3.65 |
+| Smartwatch | 1 | 1,048 | Silverbirch Vital Hybrid Watch | 1,845 | 16 | 1.16 | 0.04 | 26.44 |
+| Smartwatch | 2 | 3,604 | BassForge Collective Vital Kids Smartwatch | 1,077 | 24 | 0.68 | 0.07 | 10.29 |
+| Smartwatch | 3 | 1,821 | Cedarline Atelier Pro GPS Watch | 428 | 12 | 0.27 | 0.03 | 8.18 |
+| Smartwatch | 4 | 3,643 | Tarang Essentials Pulse Smartwatch | 193 | 12 | 0.12 | 0.03 | 3.69 |
+| Smartwatch | 5 | 2,577 | Eastlight Supply Luxe Hybrid Watch | 127 | 11 | 0.08 | 0.03 | 2.65 |
+| Speakers | 1 | 3,501 | Veyra Craft Outdoor Party Speaker | 173 | 3 | 0.11 | 0.01 | 13.22 |
+| Speakers | 2 | 2,827 | TickTone Essentials Studio Party Speaker | 257 | 5 | 0.16 | 0.01 | 11.79 |
+| Speakers | 3 | 94 | Patang Craft Mini Soundbar | 355 | 9 | 0.22 | 0.02 | 9.04 |
+| Speakers | 4 | 3,526 | Terraform Goods Studio 360 Bookshelf Speakers | 304 | 9 | 0.19 | 0.02 | 7.75 |
+| Speakers | 5 | 1,341 | Everbloom 360 Bluetooth Speaker | 120 | 4 | 0.08 | 0.01 | 6.88 |
+| Tops | 1 | 1,273 | Indigo Lane Origins Essential Crop Top | 910 | 9 | 0.57 | 0.02 | 23.18 |
+| Tops | 2 | 3,331 | Silverbirch Works Classic Blouse | 175 | 3 | 0.11 | 0.01 | 13.38 |
+| Tops | 3 | 133 | NordWeave Collective Textured Linen Shirt | 108 | 2 | 0.07 | 0.01 | 12.38 |
+| Tops | 4 | 2,496 | Patang Essential Tank Top | 207 | 4 | 0.13 | 0.01 | 11.87 |
+| Tops | 5 | 1,822 | Zephyr & Co Essential Crew-Neck T-Shirt | 423 | 15 | 0.27 | 0.04 | 6.47 |
 
 The query outputs also contain other categories; this table preserves the supplied rows for Accessories, Bedding, Decor, Haircare, Headphones, and Jackets.
 
