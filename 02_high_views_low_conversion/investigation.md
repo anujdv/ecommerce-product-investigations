@@ -1,4 +1,4 @@
-<img width="177" height="346" alt="image" src="https://github.com/user-attachments/assets/143e8123-6cc4-4de9-834d-ca332acd5e95" />## Category Purchase Baseline
+## 1. Category Purchase Baseline
 I counted distinct orders containing at least one product from each category.
 ```sql
 SELECT
