@@ -1,3 +1,19 @@
+
+
+Product views
+session_events
+    ↓
+variant → product → category
+
+Purchases
+orders
+    ↓
+order_items
+    ↓
+variant → product → category
+
+
+
 ## 1. Category Purchase Baseline
 I counted distinct orders containing at least one product from each category.
 ```sql
@@ -46,40 +62,42 @@ This ensures that the purchase population is aligned with the period for which p
 
 ---
 
-## Views per category
+## 2. Category View Baseline
 
 ```sql
-select
-	c.category_name,
-	count(*) as views
-from
-	ecom.orders o join ecom.sessions s on o.session_id = s.session_id 
-	join ecom.session_events se on s.session_id = se.session_id
-	join ecom.order_items oi on o.order_id = oi.order_id 
-	JOIN ecom.product_variants pv on oi.variant_id = pv.variant_id
-	join ecom.products p on p.product_id = pv.product_id
-	JOIN ecom.categories c on p.category_id = c.category_id
-	and se.event_type = 'product_view'
-group BY
-	c.category_name;
+SELECT
+    c.category_name,
+    COUNT(*) AS views
+FROM ecom.session_events se
+JOIN ecom.product_variants pv
+    ON se.variant_id = pv.variant_id
+JOIN ecom.products p
+    ON pv.product_id = p.product_id
+JOIN ecom.categories c
+    ON p.category_id = c.category_id
+WHERE se.event_type = 'product_view'
+GROUP BY
+    c.category_name
+ORDER BY
+    views DESC;
 ```
 
 | category_name | views |
 | --- | --- |
-| Accessories | 14,214 |
-| Bedding | 11,826 |
-| Decor | 14,033 |
-| Haircare | 14,769 |
-| Headphones | 14,175 |
-| Jackets | 13,771 |
-| Jeans | 13,777 |
-| Kitchen | 13,525 |
-| Makeup | 12,930 |
-| Shoes | 14,855 |
-| Skincare | 15,075 |
-| Smartwatch | 13,211 |
-| Speakers | 12,856 |
-| Tops | 14,069 |
+| Makeup | 18,046 |
+| Jackets | 12,358 |
+| Smartwatch | 11,878 |
+| Jeans | 11,315 |
+| Skincare | 11,243 |
+| Haircare | 11,207 |
+| Tops | 10,868 |
+| Bedding | 10,422 |
+| Decor | 10,340 |
+| Accessories | 10,309 |
+| Kitchen | 10,299 |
+| Speakers | 10,169 |
+| Shoes | 10,098 |
+| Headphones | 9,889 |
 
 ## Views to purchase ratio
 
