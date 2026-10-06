@@ -1,34 +1,48 @@
-## Number of Purchases per category
-
+<img width="177" height="346" alt="image" src="https://github.com/user-attachments/assets/143e8123-6cc4-4de9-834d-ca332acd5e95" />## Category Purchase Baseline
+I counted distinct orders containing at least one product from each category.
 ```sql
 SELECT
-	c.category_name,
-	count(distinct o.order_id) as orders
-from
-	ecom.orders o join ecom.order_items oi on o.order_id = oi.order_id 
-	JOIN ecom.product_variants pv on oi.variant_id = pv.variant_id
-	join ecom.products p on p.product_id = pv.product_id
-	JOIN ecom.categories c on p.category_id = c.category_id
-group by 
-	c.category_name
+    c.category_name,
+    COUNT(DISTINCT o.order_id) AS orders
+FROM ecom.orders o
+JOIN ecom.order_items oi
+    ON o.order_id = oi.order_id
+JOIN ecom.product_variants pv
+    ON oi.variant_id = pv.variant_id
+JOIN ecom.products p
+    ON p.product_id = pv.product_id
+JOIN ecom.categories c
+    ON p.category_id = c.category_id
+WHERE o.created_at >= '2026-04-19'
+GROUP BY
+    c.category_name
+ORDER BY
+    orders DESC;
 ```
-
 | category_name | orders |
 | --- | --- |
-| Accessories | 5,816 |
-| Bedding | 4,815 |
-| Decor | 5,680 |
-| Haircare | 5,740 |
-| Headphones | 5,642 |
-| Jackets | 5,476 |
-| Jeans | 5,440 |
-| Kitchen | 5,485 |
-| Makeup | 5,352 |
-| Shoes | 5,869 |
-| Skincare | 6,127 |
-| Smartwatch | 5,310 |
-| Speakers | 5,155 |
-| Tops | 5,521 |
+| Skincare | 2,696 |
+| Shoes | 2,627 |
+| Haircare | 2,619 |
+| Accessories | 2,529 |
+| Decor | 2,502 |
+| Headphones | 2,499 |
+| Tops | 2,492 |
+| Jeans | 2,447 |
+| Jackets | 2,441 |
+| Kitchen | 2,421 |
+| Smartwatch | 2,356 |
+| Makeup | 2,309 |
+| Speakers | 2,307 |
+| Bedding | 2,138 |
+
+Date Alignment
+
+The session_events table was instrumented starting April 19, 2026, while the orders table contains orders from an earlier period. Therefore, orders were restricted to:
+
+created_at >= '2026-04-19'
+
+This ensures that the purchase population is aligned with the period for which product-view events are available, allowing category view-share and purchase-share to be compared on a consistent time basis.
 
 ---
 
