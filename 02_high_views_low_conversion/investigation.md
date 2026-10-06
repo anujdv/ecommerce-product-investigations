@@ -200,3 +200,245 @@ Jeans is approximately balanced at 1.00×.
 
 All remaining categories have ratios below 1.0×, indicating that their purchase share is equal to or greater than their view share.
 
+
+---
+
+## 4. Product-Level Drill-Down
+
+The category-level results do not show a large 3–5× imbalance, so the next step is to identify meaningful high-view, high-ratio products within each category. The `view_count >= 100` cutoff filters out very low-exposure items whose ratios can be unstable. The query below ranks products separately in each category using the **global** product view-share/purchase-share ratio and returns the top five.
+
+### Global product view-to-purchase ratio
+
+```sql
+WITH views AS (
+    SELECT
+        c.category_name,
+        p.product_id,
+        p.product_name,
+        COUNT(*) AS view_count
+    FROM ecom.session_events se
+    JOIN ecom.product_variants pv
+        ON se.variant_id = pv.variant_id
+    JOIN ecom.products p
+        ON pv.product_id = p.product_id
+    JOIN ecom.categories c
+        ON p.category_id = c.category_id
+    WHERE se.event_type = 'product_view'
+    GROUP BY c.category_name, p.product_id, p.product_name
+),
+orders AS (
+    SELECT
+        c.category_name,
+        p.product_id,
+        p.product_name,
+        COUNT(DISTINCT o.order_id) AS order_count
+    FROM ecom.orders o
+    JOIN ecom.order_items oi
+        ON o.order_id = oi.order_id
+    JOIN ecom.product_variants pv
+        ON oi.variant_id = pv.variant_id
+    JOIN ecom.products p
+        ON pv.product_id = p.product_id
+    JOIN ecom.categories c
+        ON p.category_id = c.category_id
+    WHERE o.created_at >= '2026-04-19'
+    GROUP BY c.category_name, p.product_id, p.product_name
+),
+totals AS (
+    SELECT
+        (SELECT SUM(view_count) FROM views) AS total_views,
+        (SELECT SUM(order_count) FROM orders) AS total_orders
+),
+product_analysis AS (
+    SELECT
+        v.category_name,
+        v.product_id,
+        v.product_name,
+        v.view_count,
+        COALESCE(o.order_count, 0) AS order_count,
+        ROUND(100.0 * v.view_count / t.total_views, 2) AS view_share_pct,
+        ROUND(100.0 * COALESCE(o.order_count, 0) / t.total_orders, 2) AS purchase_share_pct,
+        ROUND(
+            (1.0 * v.view_count / t.total_views)
+            / NULLIF(1.0 * COALESCE(o.order_count, 0) / t.total_orders, 0),
+            2
+        ) AS view_to_purchase_ratio
+    FROM views v
+    LEFT JOIN orders o
+        ON v.product_id = o.product_id
+    CROSS JOIN totals t
+),
+ranked_products AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY category_name
+            ORDER BY view_to_purchase_ratio DESC, view_count DESC
+        ) AS category_rank
+    FROM product_analysis
+    WHERE view_count >= 100
+)
+SELECT
+    category_name,
+    category_rank,
+    product_id,
+    product_name,
+    view_count,
+    order_count,
+    view_share_pct,
+    purchase_share_pct,
+    view_to_purchase_ratio
+FROM ranked_products
+WHERE category_rank <= 5
+ORDER BY category_name, category_rank;
+```
+
+The ratio is global: each product's share of all product views divided by its share of all product orders. The ranking is partitioned by category so the output is a category-by-category shortlist.
+
+### Results: requested category shortlist (global calculation)
+
+| Category | Rank | Product ID | Product | Views | Orders | View share (%) | Purchase share (%) | Ratio |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| Accessories | 1 | 127 | Ivory & Oak Classic Canvas Tote | 263 | 4 | 0.17 | 0.01 | 15.08 |
+| Accessories | 2 | 2,475 | Ivory & Oak Vintage Canvas Tote | 180 | 4 | 0.11 | 0.01 | 10.32 |
+| Accessories | 3 | 1,083 | Mehr Classic Beanie | 134 | 4 | 0.08 | 0.01 | 7.68 |
+| Accessories | 4 | 162 | Loom & Ladle Everyday Sunglasses | 137 | 6 | 0.09 | 0.02 | 5.24 |
+| Accessories | 5 | 2,903 | Suta Threads Minimal Sunglasses | 106 | 6 | 0.07 | 0.02 | 4.05 |
+| Bedding | 1 | 3,002 | Cedarline Percale Cotton Bedsheet Set | 1,469 | 15 | 0.93 | 0.04 | 22.46 |
+| Bedding | 2 | 3,376 | TickTone Essentials Sateen Duvet Cover | 171 | 2 | 0.11 | 0.01 | 19.6 |
+| Bedding | 3 | 2,408 | Vastra Craft Breathable Comforter | 398 | 8 | 0.25 | 0.02 | 11.41 |
+| Bedding | 4 | 15 | Kosha 300-TC Quilt | 457 | 15 | 0.29 | 0.04 | 6.99 |
+| Bedding | 5 | 2,129 | Dhaaga Percale Mattress Protector | 354 | 12 | 0.22 | 0.03 | 6.76 |
+| Decor | 1 | 1,227 | Dhaaga Scandinavian Photo Frame Set | 691 | 7 | 0.44 | 0.02 | 22.63 |
+| Decor | 2 | 54 | Tarang Scandinavian Wall Clock | 355 | 10 | 0.22 | 0.03 | 8.14 |
+| Decor | 3 | 1,884 | Patang Craft Boho Planter | 162 | 7 | 0.1 | 0.02 | 5.31 |
+| Decor | 4 | 1,798 | Korval Atelier Terracotta Table Lamp | 223 | 11 | 0.14 | 0.03 | 4.65 |
+| Decor | 5 | 3,024 | Saffron Street Craft Handpainted Photo Frame Set | 145 | 9 | 0.09 | 0.02 | 3.69 |
+| Haircare | 1 | 1,355 | Kalpana Atelier Damage-Repair Hair Oil | 454 | 13 | 0.29 | 0.04 | 8.01 |
+| Haircare | 2 | 1,405 | Zyra Essentials Damage-Repair Hair Mask | 226 | 7 | 0.14 | 0.02 | 7.4 |
+| Haircare | 3 | 3,701 | Crestwave Co. Damage-Repair Hair Serum | 525 | 17 | 0.33 | 0.05 | 7.08 |
+| Haircare | 4 | 1,234 | UrbanRoot Studio Coconut Shampoo | 558 | 22 | 0.35 | 0.06 | 5.82 |
+| Haircare | 5 | 321 | TickTone Essentials Coconut Shampoo | 316 | 16 | 0.2 | 0.04 | 4.53 |
+| Headphones | 1 | 3,704 | Solstice Supply Bass+ Studio Monitors | 128 | 3 | 0.08 | 0.01 | 9.78 |
+| Headphones | 2 | 932 | Terraform Goods Clarity ANC Headphones | 460 | 16 | 0.29 | 0.04 | 6.59 |
+| Headphones | 3 | 2,045 | Everbloom Max Studio Monitors | 222 | 8 | 0.14 | 0.02 | 6.36 |
+| Headphones | 4 | 2,320 | Dhaaga Bass+ Wireless Earbuds | 112 | 6 | 0.07 | 0.02 | 4.28 |
+| Headphones | 5 | 3,754 | Suta Threads Origins Max Over-Ear Headphones | 167 | 10 | 0.11 | 0.03 | 3.83 |
+| Jackets | 1 | 3,921 | Drift & Dwell Classic Windcheater | 1,455 | 19 | 0.92 | 0.05 | 17.56 |
+| Jackets | 2 | 1,690 | Moksha Living Lightweight Hooded Jacket | 1,226 | 17 | 0.77 | 0.05 | 16.54 |
+| Jackets | 3 | 924 | Dhaaga Works Oversized Biker Jacket | 142 | 7 | 0.09 | 0.02 | 4.65 |
+| Jackets | 4 | 2,213 | Kosha Co. All-Weather Puffer Jacket | 239 | 16 | 0.15 | 0.04 | 3.43 |
+| Jackets | 5 | 950 | Featherlite Sherpa-Lined Bomber Jacket | 280 | 25 | 0.18 | 0.07 | 2.57 |
+
+The query outputs also contain other categories; this table preserves the supplied rows for Accessories, Bedding, Decor, Haircare, Headphones, and Jackets.
+
+### Interpreting the shortlist
+
+Tiny products with zero purchases and only 1–7 views are not useful diagnostic leads: their extreme or undefined ratios are driven by too little exposure to support a meaningful comparison. The view threshold reduces this noise. By contrast, products with substantial traffic and relatively few orders are stronger leads. Examples from the results include Cedarline Percale Cotton Bedsheet Set (1,469 views, 15 orders, 22.46×), TickTone Essentials Sateen Duvet Cover (171 views, 2 orders, 19.6×), Dhaaga Scandinavian Photo Frame Set (691 views, 7 orders, 22.63×), Drift & Dwell Classic Windcheater (1,455 views, 19 orders, 17.56×), and Moksha Living Lightweight Hooded Jacket (1,226 views, 17 orders, 16.54×).
+
+### Within-category calculation
+
+The alternative within-category ratio compares each product's share of its own category's views with its share of its own category's orders. This query uses the same exposure cutoff and returns the top five products per category.
+
+```sql
+WITH views AS (
+    SELECT
+        c.category_name,
+        p.product_id,
+        p.product_name,
+        COUNT(*) AS view_count
+    FROM ecom.session_events se
+    JOIN ecom.product_variants pv
+        ON se.variant_id = pv.variant_id
+    JOIN ecom.products p
+        ON pv.product_id = p.product_id
+    JOIN ecom.categories c
+        ON p.category_id = c.category_id
+    WHERE se.event_type = 'product_view'
+    GROUP BY c.category_name, p.product_id, p.product_name
+),
+orders AS (
+    SELECT
+        c.category_name,
+        p.product_id,
+        p.product_name,
+        COUNT(DISTINCT o.order_id) AS order_count
+    FROM ecom.orders o
+    JOIN ecom.order_items oi
+        ON o.order_id = oi.order_id
+    JOIN ecom.product_variants pv
+        ON oi.variant_id = pv.variant_id
+    JOIN ecom.products p
+        ON pv.product_id = p.product_id
+    JOIN ecom.categories c
+        ON p.category_id = c.category_id
+    WHERE o.created_at >= '2026-04-19'
+    GROUP BY c.category_name, p.product_id, p.product_name
+),
+product_data AS (
+    SELECT
+        v.category_name,
+        v.product_id,
+        v.product_name,
+        v.view_count,
+        COALESCE(o.order_count, 0) AS order_count
+    FROM views v
+    LEFT JOIN orders o
+        ON v.product_id = o.product_id
+),
+category_totals AS (
+    SELECT
+        category_name,
+        SUM(view_count) AS category_total_views,
+        SUM(order_count) AS category_total_orders
+    FROM product_data
+    GROUP BY category_name
+),
+product_analysis AS (
+    SELECT
+        p.category_name,
+        p.product_id,
+        p.product_name,
+        p.view_count,
+        p.order_count,
+        ROUND(100.0 * p.view_count / ct.category_total_views, 2) AS category_view_share_pct,
+        ROUND(100.0 * p.order_count / NULLIF(ct.category_total_orders, 0), 2) AS category_purchase_share_pct,
+        ROUND(
+            (1.0 * p.view_count / ct.category_total_views)
+            / NULLIF(1.0 * p.order_count / ct.category_total_orders, 0),
+            2
+        ) AS view_to_purchase_ratio
+    FROM product_data p
+    JOIN category_totals ct
+        ON p.category_name = ct.category_name
+),
+ranked_products AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY category_name
+            ORDER BY view_to_purchase_ratio DESC, view_count DESC
+        ) AS category_rank
+    FROM product_analysis
+    WHERE view_count >= 100
+)
+SELECT
+    category_name,
+    category_rank,
+    product_id,
+    product_name,
+    view_count,
+    order_count,
+    category_view_share_pct,
+    category_purchase_share_pct,
+    view_to_purchase_ratio
+FROM ranked_products
+WHERE category_rank <= 5
+ORDER BY category_name, category_rank;
+```
+
+The within-category ranking is similar to the global ranking because both ratios are proportional to the product's views-to-orders relationship, with category-specific or global denominators scaling the ratio. Since the original hypothesis compares category view share against global view share and purchase share, retain the global ratio as the primary metric for consistency with the category analysis.
+
+### Next diagnostic direction
+
+For the shortlisted products, compare **price, discount, rating, review count, and browsing/exposure factors** with other products in the same category. This will help test three possible explanations: price sensitivity, quality or review concerns, and differences in browsing-surface exposure. The ratio identifies products to investigate; these comparisons are needed to examine what may explain their view-to-order imbalance.
