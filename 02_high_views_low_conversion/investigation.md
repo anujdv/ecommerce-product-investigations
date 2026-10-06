@@ -370,8 +370,6 @@ The ratio is global: each product's share of all product views divided by its sh
 | Tops | 4 | 2,496 | Patang Essential Tank Top | 207 | 4 | 0.13 | 0.01 | 11.87 |
 | Tops | 5 | 1,822 | Zephyr & Co Essential Crew-Neck T-Shirt | 423 | 15 | 0.27 | 0.04 | 6.47 |
 
-The query outputs also contain other categories; this table preserves the supplied rows for Accessories, Bedding, Decor, Haircare, Headphones, and Jackets.
-
 ### Interpreting the shortlist
 
 Tiny products with zero purchases and only 1–7 views are not useful diagnostic leads: their extreme or undefined ratios are driven by too little exposure to support a meaningful comparison. The view threshold reduces this noise. By contrast, products with substantial traffic and relatively few orders are stronger leads. Examples from the results include Cedarline Percale Cotton Bedsheet Set (1,469 views, 15 orders, 22.46×), TickTone Essentials Sateen Duvet Cover (171 views, 2 orders, 19.6×), Dhaaga Scandinavian Photo Frame Set (691 views, 7 orders, 22.63×), Drift & Dwell Classic Windcheater (1,455 views, 19 orders, 17.56×), and Moksha Living Lightweight Hooded Jacket (1,226 views, 17 orders, 16.54×).
