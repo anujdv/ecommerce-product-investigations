@@ -96,8 +96,7 @@ ORDER BY
 | Window Shopper | 755 | 3,278 | 23.03 |
 | Premium | 690 | 2,838 | 24.31 |
 
-**Observation**: Redemption rates are fairly uniform (~20–25%) across all segments.  
-This suggests coupons are being used broadly, not strategically.
+**Observation**: Coupon redemption rates range from 21.46% to 24.31%, a spread of 2.85 percentage points. Premium is highest (24.31%) and New Customer is lowest (21.46%); most segments cluster around 22–23%. This indicates broad use with modest segment variation, not evidence that coupons create incremental demand.
 
 ---
 
@@ -123,8 +122,9 @@ Incremental	2,883	11,820	24.39
 | Cannibalization | 4,423 | 17,008 | 26.01 |
 | Incremental | 2,883 | 11,820 | 24.39 |
 
-**Observation**: Redemption rates are nearly identical (~24%).  
-Volume split: 62% cannibalization vs 38% incremental.
+**Observation**: The Cannibalization-labeled group redeems at 26.01%, versus 24.39% for the Incremental-labeled group, a 1.62 percentage-point difference. The groups account for 4,423 of 7,306 coupon orders (60.6%) and 2,883 (39.4%), respectively. These figures describe where redemptions occur; the group labels do not establish causal cannibalization or incrementality.
+
+**Refreshed result coverage**: The segment and meta-group tables above contain refreshed outputs. The Scope 4 table below still reports 571 and 351 coupon orders, which do not reconcile to the refreshed segment results (7,306 coupon orders across the ten segments). Rerun Scope 4 with the corrected membership join before interpreting its averages or counts. No result tables are present yet for the SKU, first-time coupon, or discount-type queries in Sections 6–7, so those analyses do not have supported findings to summarize.
 
 ---
 
