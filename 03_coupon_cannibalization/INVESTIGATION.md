@@ -124,7 +124,7 @@ Incremental	2,883	11,820	24.39
 
 **Observation**: The Cannibalization-labeled group redeems at 26.01%, versus 24.39% for the Incremental-labeled group, a 1.62 percentage-point difference. The groups account for 4,423 of 7,306 coupon orders (60.6%) and 2,883 (39.4%), respectively. These figures describe where redemptions occur; the group labels do not establish causal cannibalization or incrementality.
 
-**Refreshed result coverage**: The segment and meta-group tables above contain refreshed outputs. The Scope 4 table below still reports 571 and 351 coupon orders, which do not reconcile to the refreshed segment results (7,306 coupon orders across the ten segments). Rerun Scope 4 with the corrected membership join before interpreting its averages or counts. No result tables are present yet for the SKU, first-time coupon, or discount-type queries in Sections 6–7, so those analyses do not have supported findings to summarize.
+
 
 ---
 
@@ -153,10 +153,10 @@ GROUP BY meta_group;
 
 Comparing coupon vs non‑coupon orders:
 
-| meta_group      | avg_coupon_order_value | avg_non_coupon_order_value | coupon_orders | non_coupon_orders |
-|-----------------|------------------------|----------------------------|---------------|-------------------|
-| Cannibalization | 7,041.52               | 7,280.31                   | 571           | 1,807             |
-| Incremental     | 6,853.54               | 7,855.72                   | 351           | 1,152             |
+| meta_group | avg_coupon_order_value | avg_non_coupon_order_value | coupon_orders | non_coupon_orders |
+| --- | --- | --- | --- | --- |
+| Cannibalization | 7,266.73 | 7,503.58 | 4,423 | 15,139 |
+| Incremental | 7,642.48 | 7,500.83 | 2,883 | 9,973 |
 
 - **Cannibalization**: Coupon orders slightly lower than non‑coupon orders → margin erosion.  
 - **Incremental-labeled segments**: Coupon orders have lower observed AOV, but this comparison does not establish that coupons caused additional orders. Segment membership is descriptive, not a randomized treatment or counterfactual.  
