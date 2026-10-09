@@ -158,12 +158,13 @@ Comparing coupon vs non‑coupon orders:
 | Cannibalization | 7,266.73 | 7,503.58 | 4,423 | 15,139 |
 | Incremental | 7,642.48 | 7,500.83 | 2,883 | 9,973 |
 
-- **Cannibalization**: Coupon orders slightly lower than non‑coupon orders → margin erosion.  
-- **Incremental-labeled segments**: Coupon orders have lower observed AOV, but this comparison does not establish that coupons caused additional orders. Segment membership is descriptive, not a randomized treatment or counterfactual.  
+**Observation**: In the Cannibalization-labeled group, coupon orders average ₹7,266.73 versus ₹7,503.58 without coupons, a ₹236.85 (3.2%) lower observed order value. In the Incremental-labeled group, coupon orders average ₹7,642.48 versus ₹7,500.83 without coupons, a ₹141.65 (1.9%) higher observed order value. The query covers 4,423 coupon and 15,139 non-coupon orders in the Cannibalization-labeled group, and 2,883 coupon and 9,973 non-coupon orders in the Incremental-labeled group.
+
+These are descriptive differences in paid order value. The higher average in Incremental-labeled segments is consistent with larger coupon baskets in this result, but it does not show that coupons caused additional orders. The lower average in Cannibalization-labeled segments does not establish margin erosion: order value is not profit, and the comparison does not control for customer, product, or offer selection.
 
 **Incrementality caveat and sensitivity**
 
-The segment labels do not identify which coupon orders would not have happened without a discount. The earlier calculation of 351 × ₹6,853 (~₹2.4M) is gross coupon-order revenue, not incremental revenue or profit. Likewise, the cannibalization AOV gap is descriptive and cannot be called margin loss without cost and discount data.
+The segment labels do not identify which coupon orders would not have happened without a discount. Observed coupon-order revenue, even when higher than the non-coupon average, is not incremental revenue or profit. Likewise, the cannibalization AOV gap is descriptive and cannot be called margin loss without cost and discount data.
 
 Use scenario rates for the fraction of coupon orders that are truly incremental, and compare estimated incremental contribution against discount cost. Treat the result as a sensitivity range, not a point estimate. A causal estimate requires a holdout, randomized offer assignment, or a defensible matched/control design with pre-period covariates.
 
