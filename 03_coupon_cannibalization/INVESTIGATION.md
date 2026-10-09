@@ -50,34 +50,51 @@ Querying orders → customers → segment memberships → segments:
 
 ```sql
 SELECT
-	cs.segment_name,
-	count(*) filter (WHERE o.applied_coupon_id IS NOT NULL) as orders_with_coupons,
-	count(distinct o.order_id) as total_orders,
-	round((100.0*(count(*) filter (WHERE o.applied_coupon_id IS NOT NULL)) / count(distinct o.order_id)),2) as coupon_redemption_rate
+  cs.segment_name,
+  count(*) FILTER (
+    WHERE
+      o.applied_coupon_id IS NOT NULL
+  ) AS orders_with_coupons,
+  count(DISTINCT o.order_id) AS total_orders,
+  round(
+    (
+      100.0 * (
+        count(*) FILTER (
+          WHERE
+            o.applied_coupon_id IS NOT NULL
+        )
+      ) / count(DISTINCT o.order_id)
+    ),
+    2
+  ) AS coupon_redemption_rate
 FROM
-	ecom.orders o join ecom.customers c on o.customer_id = c.customer_id
-	join ecom.segment_memberships sm on c.customer_id = sm.customer_id
-	AND o.created_at >= sm.valid_from
-    AND (sm.valid_to IS NULL OR o.created_at <= sm.valid_to)
-	join ecom.customer_segments cs on sm.segment_id = cs.segment_id
-group BY
-	cs.segment_name
-order by 
-	coupon_redemption_rate;
+  ecom.orders o
+  JOIN ecom.customers c ON o.customer_id = c.customer_id
+  JOIN ecom.segment_memberships sm ON c.customer_id = sm.customer_id
+  AND o.created_at >= sm.valid_from
+  AND (
+    sm.valid_to IS NULL
+    OR o.created_at <= sm.valid_to
+  )
+  JOIN ecom.customer_segments cs ON sm.segment_id = cs.segment_id
+GROUP BY
+  cs.segment_name
+ORDER BY
+  coupon_redemption_rate;
 ```
 
-| segment_name   | orders_with_coupons | total_orders | coupon_redemption_rate |
-|----------------|----------------------|--------------|------------------------|
-| New Customer   | 63                   | 309          | 20.39                  |
-| Big Spender    | 105                  | 470          | 22.34                  |
-| Champion       | 93                   | 409          | 22.74                  |
-| Window Shopper | 81                   | 340          | 23.82                  |
-| Active Buyer   | 81                   | 339          | 23.89                  |
-| At Risk        | 100                  | 418          | 23.92                  |
-| Churned        | 107                  | 436          | 24.54                  |
-| Coupon Hunter  | 96                   | 384          | 25.00                  |
-| Loyal          | 105                  | 417          | 25.18                  |
-| Premium        | 91                   | 359          | 25.35                  |
+| segment_name | orders_with_coupons | total_orders | coupon_redemption_rate |
+| --- | --- | --- | --- |
+| New Customer | 689 | 3,211 | 21.46 |
+| Loyal | 748 | 3,433 | 21.79 |
+| Big Spender | 646 | 2,936 | 22 |
+| Coupon Hunter | 821 | 3,686 | 22.27 |
+| At Risk | 678 | 3,041 | 22.3 |
+| Active Buyer | 675 | 3,002 | 22.49 |
+| Churned | 761 | 3,326 | 22.88 |
+| Champion | 843 | 3,667 | 22.99 |
+| Window Shopper | 755 | 3,278 | 23.03 |
+| Premium | 690 | 2,838 | 24.31 |
 
 **Observation**: Redemption rates are fairly uniform (~20–25%) across all segments.  
 This suggests coupons are being used broadly, not strategically.
