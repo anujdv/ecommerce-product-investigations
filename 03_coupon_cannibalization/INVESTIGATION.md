@@ -168,6 +168,40 @@ The segment labels do not identify which coupon orders would not have happened w
 
 Use scenario rates for the fraction of coupon orders that are truly incremental, and compare estimated incremental contribution against discount cost. Treat the result as a sensitivity range, not a point estimate. A causal estimate requires a holdout, randomized offer assignment, or a defensible matched/control design with pre-period covariates.
 
+Illustrative revenue sensitivity for coupon orders in the Incremental-labeled segments (not a causal estimate or profit calculation):
+
+```sql
+WITH scenario_rates(incremental_share) AS (
+    VALUES (0.00::numeric), (0.10), (0.25), (0.50), (0.75), (1.00)
+),
+incremental_labeled_coupon_orders AS (
+    SELECT
+        o.order_id,
+        o.total
+    FROM ecom.orders o
+    JOIN ecom.customers c ON c.customer_id = o.customer_id
+    JOIN ecom.segment_memberships sm
+        ON sm.customer_id = c.customer_id
+        AND o.created_at >= sm.valid_from
+        AND (sm.valid_to IS NULL OR o.created_at <= sm.valid_to)
+    JOIN ecom.customer_segments cs ON cs.segment_id = sm.segment_id
+    WHERE o.applied_coupon_id IS NOT NULL
+      AND cs.segment_name IN ('New Customer', 'Window Shopper', 'At Risk', 'Churned')
+)
+SELECT
+    sr.incremental_share,
+    COUNT(DISTINCT ic.order_id) AS coupon_orders,
+    ROUND(SUM(ic.total), 2) AS observed_coupon_revenue,
+    ROUND(sr.incremental_share * SUM(ic.total), 2) AS scenario_attributed_revenue
+FROM incremental_labeled_coupon_orders ic
+CROSS JOIN scenario_rates sr
+GROUP BY sr.incremental_share
+ORDER BY sr.incremental_share;
+```
+
+This applies an explicit share assumption to observed coupon revenue. It does not establish which orders were caused by the offer, does not subtract discount or product costs, and must not be labeled incremental profit.
+
+
 ---
 ## 5. Conclusion
 
