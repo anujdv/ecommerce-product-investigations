@@ -293,7 +293,6 @@ SELECT
     c.discount_type,
     COUNT(*) AS coupon_orders,
     ROUND(AVG(o.total), 2) AS avg_paid_basket,
-    ROUND(AVG(o.total) FILTER (WHERE o.applied_coupon_id IS NULL), 2) AS avg_non_coupon_basket,
     ROUND(AVG(o.discount_amount), 2) AS avg_discount,
     ROUND(SUM(o.discount_amount), 2) AS total_discount
 FROM ecom.orders o
