@@ -162,32 +162,22 @@ Comparing coupon vs non‑coupon orders:
 - **Cannibalization**: Coupon orders slightly lower than non‑coupon orders → margin erosion.  
 - **Incremental-labeled segments**: Coupon orders have lower observed AOV, but this comparison does not establish that coupons caused additional orders. Segment membership is descriptive, not a randomized treatment or counterfactual.  
 
-**Net Impact Calculation**  
-\[
-\text{Net Impact} = (\text{Incremental Orders Lift} \times \text{Avg Coupon Order Value}) - (\text{Cannibalization Orders} \times \text{AOV Difference})
-\]
+**Incrementality caveat and sensitivity**
 
-- Incremental lift = 351 × 6,853 ≈ **₹2.4M incremental revenue**  
-- Cannibalization erosion = 571 × (7,280 – 7,041) ≈ **₹136K margin loss**  
-- **Net positive impact ≈ ₹2.3M**
+The segment labels do not identify which coupon orders would not have happened without a discount. The earlier calculation of 351 × ₹6,853 (~₹2.4M) is gross coupon-order revenue, not incremental revenue or profit. Likewise, the cannibalization AOV gap is descriptive and cannot be called margin loss without cost and discount data.
+
+Use scenario rates for the fraction of coupon orders that are truly incremental, and compare estimated incremental contribution against discount cost. Treat the result as a sensitivity range, not a point estimate. A causal estimate requires a holdout, randomized offer assignment, or a defensible matched/control design with pre-period covariates.
 
 ---
-
 ## 5. Conclusion
 
-Coupon redemptions split into **Incremental demand (38%)** and **Cannibalization (62%)**.  
-Coupons clearly drive net‑new orders in New, Window Shopper, At Risk, and Churned segments, but most redemptions occur in loyal or high‑value segments where they subsidize existing purchases.  
+Coupon redemptions are observed in both segment groups: 38% in segments labeled Incremental and 62% in those labeled Cannibalization. These labels describe the segmentation hypothesis; they do not prove causal lift or subsidy.
 
-Overall, coupons deliver a **net positive impact** (~₹2.3M), but they are inefficiently targeted.  
-To settle the marketing vs finance debate: *discounts do create new demand, yet they also erode margins in existing orders*.  
+The available order-value summaries are insufficient to calculate incremental profit or margin impact. Treat business impact as unknown until a holdout or credible counterfactual is measured. Use the sensitivity analysis above to show how conclusions vary across plausible incrementality rates.
 
-**Recommendation**: Tighten coupon targeting toward Incremental segments and reduce exposure in Cannibalization segments to maximize growth without unnecessary subsidy.
+**Recommendation**: Tighten coupon targeting only after validating incremental contribution with a holdout or credible counterfactual, and account for discount cost and product margin.
 
 ---
-
-
----
-
 ## 6. Scope 2 Re-run: Coupon Performance at SKU Level
 
 This extends Scope 2 from segment totals to item-level performance. It assumes the order-line table is `ecom.order_items` with `order_id`, `product_id`, `quantity`, and `unit_price`, and that `ecom.products` contains `product_id`, `sku`, and `product_name`. Confirm these names against the database schema before execution; adapt only the identifiers if the source uses different names.
