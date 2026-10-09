@@ -110,36 +110,18 @@ I collapsed the 10 segments into two meta‑groups:
 
 
 ```sql
-SELECT
-    CASE 
-        WHEN cs.segment_name IN ('New Customer','Window Shopper','At Risk','Churned')
-            THEN 'Incremental'
-        WHEN cs.segment_name IN ('Active Buyer','Loyal','Champion','Big Spender','Premium','Coupon Hunter')
-            THEN 'Cannibalization'
-    END AS meta_group,
-    COUNT(*) FILTER (WHERE o.applied_coupon_id IS NOT NULL) AS orders_with_coupons,
-    COUNT(DISTINCT o.order_id) AS total_orders,
-    ROUND(
-        100.0 * COUNT(*) FILTER (WHERE o.applied_coupon_id IS NOT NULL) 
-        / NULLIF(COUNT(DISTINCT o.order_id),0), 2
-    ) AS coupon_redemption_rate
-FROM ecom.orders o
-JOIN ecom.customers c 
-    ON o.customer_id = c.customer_id
-JOIN ecom.segment_memberships sm 
-    ON c.customer_id = sm.customer_id
-    AND o.created_at >= sm.valid_from
-    AND (sm.valid_to IS NULL OR o.created_at <= sm.valid_to)
-JOIN ecom.customer_segments cs 
-    ON sm.segment_id = cs.segment_id
-GROUP BY meta_group;
+meta_group	orders_with_coupons	total_orders	coupon_redemption_rate
+Cannibalization	4,423	17,008	26.01
+Incremental	2,883	11,820	24.39
+<img width="353" height="70" alt="image" src="https://github.com/user-attachments/assets/ae2498a6-a946-4444-8851-a681616d4ae7" />
+
 
 ```
 
-| meta_group      | orders_with_coupons | total_orders | coupon_redemption_rate |
-|-----------------|----------------------|--------------|------------------------|
-| Cannibalization | 571                  | 2,348        | 24.32                  |
-| Incremental     | 351                  | 1,485        | 23.64                  |
+| meta_group | orders_with_coupons | total_orders | coupon_redemption_rate |
+| --- | --- | --- | --- |
+| Cannibalization | 4,423 | 17,008 | 26.01 |
+| Incremental | 2,883 | 11,820 | 24.39 |
 
 **Observation**: Redemption rates are nearly identical (~24%).  
 Volume split: 62% cannibalization vs 38% incremental.
