@@ -161,3 +161,93 @@ Comparing coupon vs non‑coupon orders:
 **Observation**: In the Cannibalization-labeled group, coupon orders average ₹7,266.73 versus ₹7,503.58 without coupons, a ₹236.85 (3.2%) lower observed order value. In the Incremental-labeled group, coupon orders average ₹7,642.48 versus ₹7,500.83 without coupons, a ₹141.65 (1.9%) higher observed order value. The query covers 4,423 coupon and 15,139 non-coupon orders in the Cannibalization-labeled group, and 2,883 coupon and 9,973 non-coupon orders in the Incremental-labeled group.
 
 These are descriptive differences in paid order value. The higher average in Incremental-labeled segments is consistent with larger coupon baskets in this result, but it does not show that coupons caused additional orders. The lower average in Cannibalization-labeled segments does not establish margin erosion: order value is not profit, and the comparison does not control for customer, product, or offer selection.
+
+
+---
+
+## 5. First-Time Coupon Repeat Redemptions
+
+This query ranks each customer's full order history before filtering to the first-time coupon codes, so an earlier non-coupon order is counted when deciding whether a redemption was on a repeat purchase.
+
+```sql
+WITH ranked_orders AS (
+    SELECT
+        o.order_id,
+        o.customer_id,
+        o.created_at,
+        o.applied_coupon_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY o.customer_id
+            ORDER BY o.created_at, o.order_id
+        ) AS customer_order_number
+    FROM ecom.orders o
+),
+target_redemptions AS (
+    SELECT
+        ro.order_id,
+        ro.customer_id,
+        ro.customer_order_number,
+        c.code AS coupon_code
+    FROM ranked_orders ro
+    JOIN ecom.coupons c
+        ON c.coupon_id = ro.applied_coupon_id
+    WHERE UPPER(c.code) IN ('WELCOME10', 'WELCOME15', 'FIRSTBUY')
+)
+SELECT
+    coupon_code,
+    COUNT(*) AS redemptions,
+    COUNT(*) FILTER (
+        WHERE customer_order_number = 1
+    ) AS first_order_redemptions,
+    COUNT(*) FILTER (
+        WHERE customer_order_number > 1
+    ) AS repeat_order_redemptions,
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE customer_order_number > 1
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS repeat_redemption_pct
+FROM target_redemptions
+GROUP BY coupon_code
+ORDER BY coupon_code;
+```
+
+| coupon_code | redemptions | first_order_redemptions | repeat_order_redemptions | repeat_redemption_pct |
+| --- | ---: | ---: | ---: | ---: |
+| FIRSTBUY | 171 | 43 | 128 | 74.85 |
+| WELCOME10 | 178 | 35 | 143 | 80.34 |
+| WELCOME15 | 167 | 41 | 126 | 75.45 |
+| **Total** | **516** | **119** | **397** | **76.94** |
+
+**Observation**: 397 of 516 redemptions (76.94%) were on customers' repeat orders. WELCOME10 has the highest repeat redemption rate (80.34%); FIRSTBUY has the lowest (74.85%). This is a strong signal to review the campaign eligibility rules, but repeat redemption alone does not prove a violation. Check each code's intended eligibility and `max_uses_per_customer` before labeling these orders as coupon leakage.
+
+---
+
+## 6. Coupon Type: Basket Size and Configured Discount
+
+The coupon table contains `discount_type` and `discount_value`. The latter is the configured value, not necessarily the amount actually applied to an order. Its units can differ by discount type, so it should not be summed as discount cost.
+
+```sql
+SELECT
+    c.discount_type,
+    COUNT(DISTINCT o.order_id) AS coupon_orders,
+    ROUND(AVG(o.total), 2) AS avg_paid_basket,
+    ROUND(AVG(c.discount_value), 2) AS avg_configured_discount_value
+FROM ecom.orders AS o
+JOIN ecom.coupons AS c
+    ON c.coupon_id = o.applied_coupon_id
+GROUP BY c.discount_type
+ORDER BY coupon_orders DESC;
+```
+
+| discount_type | coupon_orders | avg_paid_basket | avg_configured_discount_value |
+| --- | ---: | ---: | ---: |
+| percent | 5,225 | ₹7,531.73 | 16.96 |
+| fixed | 1,436 | ₹7,377.94 | 14.47 |
+| free_shipping | 1,367 | ₹7,327.84 | 17.19 |
+| BOGO | 913 | ₹7,665.64 | 16.21 |
+
+**Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
+
+**Next check**: Compare each customer's redemptions with the applicable coupon's `max_uses_per_customer` and validity dates. To assess margin, obtain the realized order-level discount and product costs; to establish whether coupons cause extra orders, use a randomized holdout or credible counterfactual.
