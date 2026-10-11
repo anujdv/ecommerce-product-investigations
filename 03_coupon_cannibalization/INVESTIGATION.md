@@ -224,6 +224,16 @@ ORDER BY coupon_code;
 
 ---
 
+## Interim Conclusion: Findings Through Promo-Code Repeat Redemptions
+
+Coupon use is widespread across segments, and the observed basket values differ only descriptively: coupon orders average 1.9% higher in the Incremental-labeled segments and 3.2% lower in the Cannibalization-labeled segments. These comparisons do not establish whether coupons created demand or reduced profit.
+
+The repeat-redemption analysis found that 397 of 516 uses of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%) were on repeat orders. This warrants an eligibility review, especially for WELCOME10 (80.34% repeat use), but does not by itself prove policy violations; the offer terms and per-customer limits must be checked.
+
+**Recommended next step**: Compare each customer's redemptions with the applicable coupon's eligibility rules, validity dates, and `max_uses_per_customer`. To settle whether coupons create incremental demand, use a randomized holdout and compare order rate and contribution after actual discount and product costs.
+
+---
+
 ## 6. Coupon Type: Basket Size and Configured Discount
 
 The coupon table contains `discount_type` and `discount_value`. The latter is the configured value, not necessarily the amount actually applied to an order. Its units can differ by discount type, so it should not be summed as discount cost.
