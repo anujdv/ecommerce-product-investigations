@@ -343,7 +343,28 @@ ORDER BY coupon_orders DESC;
 
 **Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
 
-**Next check**: Compare each customer's redemptions with the applicable coupon's `max_uses_per_customer` and validity dates. To assess margin, obtain the realized order-level discount and product costs; to establish whether coupons cause extra orders, use a randomized holdout or credible counterfactual.
+**Next check**: The customer usage-limit and validity-date check is completed in Section 6. To assess margin by coupon type, locate the fields for the discount actually applied to each order and the product cost. The coupon's `discount_value` is only the configured offer value, not necessarily the realized discount.
+
+Use this schema lookup in Metabase to find likely discount and cost fields:
+
+```sql
+SELECT
+    table_schema,
+    table_name,
+    column_name,
+    data_type
+FROM information_schema.columns
+WHERE table_schema = 'ecom'
+  AND (
+      column_name ILIKE '%discount%'
+      OR column_name ILIKE '%cost%'
+      OR column_name ILIKE '%cogs%'
+      OR column_name ILIKE '%price%'
+  )
+ORDER BY table_name, ordinal_position;
+```
+
+Once those fields are identified, calculate contribution by coupon type as paid revenue minus realized discounts and product costs, then compare similar products and customer groups. A randomized holdout is still needed to determine whether coupons cause additional orders.
 
 ---
 
