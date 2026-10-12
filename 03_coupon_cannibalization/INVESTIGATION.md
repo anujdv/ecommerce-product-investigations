@@ -36,11 +36,11 @@ The `customer_segments` table defines 10 segments:
 | 9          | Coupon Hunter  |
 | 10         | Premium        |
 
-**Hypothesis**  
+**Working hypotheses to test**  
 - New Customer / Window Shopper → coupons should increase demand.  
 - At Risk / Churned → coupons should re‑activate disengaged customers.  
 - Active Buyer / Champion / Loyal / Premium / Big Spender → high risk of cannibalization.  
-- Coupon Hunter → only buys with coupons, almost pure cannibalization.
+- Coupon Hunter → may be more promotion-responsive; redemption patterns alone cannot show whether coupons create or subsidize orders.
 
 ---
 
@@ -109,12 +109,34 @@ I collapsed the 10 segments into two meta‑groups:
 
 
 ```sql
-meta_group	orders_with_coupons	total_orders	coupon_redemption_rate
-Cannibalization	4,423	17,008	26.01
-Incremental	2,883	11,820	24.39
-<img width="353" height="70" alt="image" src="https://github.com/user-attachments/assets/ae2498a6-a946-4444-8851-a681616d4ae7" />
-
-
+SELECT
+    CASE
+        WHEN cs.segment_name IN ('New Customer', 'Window Shopper', 'At Risk', 'Churned')
+            THEN 'Incremental'
+        WHEN cs.segment_name IN ('Active Buyer', 'Loyal', 'Champion', 'Big Spender', 'Premium', 'Coupon Hunter')
+            THEN 'Cannibalization'
+    END AS meta_group,
+    COUNT(*) FILTER (
+        WHERE o.applied_coupon_id IS NOT NULL
+    ) AS orders_with_coupons,
+    COUNT(DISTINCT o.order_id) AS total_orders,
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE o.applied_coupon_id IS NOT NULL
+        ) / NULLIF(COUNT(DISTINCT o.order_id), 0),
+        2
+    ) AS coupon_redemption_rate
+FROM ecom.orders o
+JOIN ecom.customers c
+    ON c.customer_id = o.customer_id
+JOIN ecom.segment_memberships sm
+    ON sm.customer_id = c.customer_id
+    AND o.created_at >= sm.valid_from
+    AND (sm.valid_to IS NULL OR o.created_at <= sm.valid_to)
+JOIN ecom.customer_segments cs
+    ON cs.segment_id = sm.segment_id
+GROUP BY meta_group
+ORDER BY meta_group;
 ```
 
 | meta_group | orders_with_coupons | total_orders | coupon_redemption_rate |
@@ -220,8 +242,7 @@ ORDER BY coupon_code;
 | WELCOME15 | 167 | 41 | 126 | 75.45 |
 | **Total** | **516** | **119** | **397** | **76.94** |
 
-**Observation**: 397 of 516 redemptions (76.94%) were on customers' repeat orders. WELCOME10 has the highest repeat redemption rate (80.34%); FIRSTBUY has the lowest (74.85%). This is a strong signal to review the campaign eligibility rules, but repeat redemption alone does not prove a violation. Check each code's intended eligibility and `max_uses_per_customer` before labeling these orders as coupon leakage.
-
+**Observation**: 397 of 516 redemptions (76.94%) occurred on repeat orders. WELCOME10 had the highest repeat-order rate (80.34%), followed by WELCOME15 (75.45%) and FIRSTBUY (74.85%). Repeat use is a signal to check eligibility, but it is not automatically a violation. Section 6 compares these redemptions with configured usage caps and validity dates.
 ---
 
 ## 6. Coupon Eligibility and Usage-Limit Check
@@ -307,16 +328,6 @@ ORDER BY coupon_code;
 
 ---
 
-## Interim Conclusion: Segment and Coupon Eligibility Findings
-
-Coupon orders have a slightly higher observed average order value in the Incremental-labeled segments (+1.9%) and a lower average in the Cannibalization-labeled segments (−3.2%). These are descriptive differences; they do not establish that coupons caused extra orders or reduced profit.
-
-Repeat orders account for 397 of 516 redemptions of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%). The usage-limit check found 16 redemptions above per-customer caps, 5 outside the configured validity dates, and none above the overall coupon-use caps. Repeat-order use alone is not a violation unless the offer terms restrict redemption to a customer's first order.
-
-These checks identify eligibility exceptions to review, but the central question—whether discounts create net-new demand or subsidize existing orders—remains unanswered. A randomized holdout measuring order rate and contribution after actual discounts and product costs is needed to estimate that impact.
-
----
-
 ## 7. Coupon Type: Basket Size and Configured Discount
 
 The coupon table contains `discount_type` and `discount_value`. The latter is the configured value, not necessarily the amount actually applied to an order. Its units can differ by discount type, so it should not be summed as discount cost.
@@ -368,13 +379,12 @@ Once those fields are identified, calculate contribution by coupon type as paid 
 
 ---
 
-## 8. Overall Conclusion
+## 8. Conclusion
 
-The analysis identifies patterns and possible control issues, but it does not yet settle whether discounts create net-new demand or subsidize orders that would have happened anyway.
+**Answer to the question:** The current analysis does not establish whether discounts are driving net-new demand or subsidizing orders that would have happened anyway. Coupon redemption is widespread. Coupon orders have a higher observed average order value in the Incremental-labeled segments (+1.9%) and a lower one in the Cannibalization-labeled segments (−3.2%), but these are uncontrolled comparisons of paid order value, not causal lift or profit.
 
-Coupon redemption rates are relatively similar across segments. Coupon orders have a 1.9% higher observed average order value in the Incremental-labeled group and a 3.2% lower observed average in the Cannibalization-labeled group, but these are uncontrolled comparisons and order value is not profit. Coupon-type basket averages also vary descriptively; BOGO has the highest average paid basket, while configured discount values do not measure realized discount cost or margin.
+The strongest operational signal is repeat use of the three first-time codes: 397 of 516 redemptions (76.94%) were on repeat orders. The eligibility check found 16 redemptions over per-customer limits, 5 outside configured validity dates, and none over overall use caps. Confirm whether the offers required a customer's first-ever order, and review the flagged redemptions; do not treat all repeat use as a confirmed violation.
 
-The clearest operational finding is that 76.94% of redemptions of FIRSTBUY, WELCOME10, and WELCOME15 were on repeat orders. The usage-limit check found 16 redemptions over per-customer caps, 5 outside validity dates, and none over overall coupon caps. Thus, repeat use warrants eligibility review, while the specific cap/date exceptions should be investigated and corrected. Repeat-order status alone does not prove a rule was broken.
+Basket values also vary by coupon type, with BOGO orders highest and free-shipping orders lowest in this sample. These differences do not show which offer type is more profitable: configured coupon values are not realized discounts, and the analysis does not include product costs.
 
-**Next step**: Confirm that these codes were restricted to first-time customers, review the flagged redemption records and validity-boundary rules, then measure causal impact with a randomized holdout. Compare order rate and contribution after actual discounts and product costs. Until that test is run, report the business impact as inconclusive rather than claiming net lift or margin loss.
-
+**Recommendation:** Do not claim that coupons are net-positive or that the full repeat-redemption share is leakage based on these results. First confirm offer eligibility and resolve the flagged exceptions. Then run a randomized coupon holdout and compare order rate and contribution per assigned customer after actual discounts and product costs. That is the evidence needed to decide whether coupons create enough incremental demand to pay for the subsidy.
