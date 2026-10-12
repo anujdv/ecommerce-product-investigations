@@ -224,47 +224,7 @@ ORDER BY coupon_code;
 
 ---
 
-## Interim Conclusion: Findings Through Promo-Code Repeat Redemptions
-
-Coupon use is widespread across segments, and the observed basket values differ only descriptively: coupon orders average 1.9% higher in the Incremental-labeled segments and 3.2% lower in the Cannibalization-labeled segments. These comparisons do not establish whether coupons created demand or reduced profit.
-
-The repeat-redemption analysis found that 397 of 516 uses of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%) were on repeat orders. This warrants an eligibility review, especially for WELCOME10 (80.34% repeat use), but does not by itself prove policy violations; the offer terms and per-customer limits must be checked.
-
-**Follow-up**: Section 7 checks repeat redemptions against configured per-customer and validity limits. To settle whether coupons create incremental demand, use a randomized holdout and compare order rate and contribution after actual discount and product costs.
-
----
-
-## 6. Coupon Type: Basket Size and Configured Discount
-
-The coupon table contains `discount_type` and `discount_value`. The latter is the configured value, not necessarily the amount actually applied to an order. Its units can differ by discount type, so it should not be summed as discount cost.
-
-```sql
-SELECT
-    c.discount_type,
-    COUNT(DISTINCT o.order_id) AS coupon_orders,
-    ROUND(AVG(o.total), 2) AS avg_paid_basket,
-    ROUND(AVG(c.discount_value), 2) AS avg_configured_discount_value
-FROM ecom.orders AS o
-JOIN ecom.coupons AS c
-    ON c.coupon_id = o.applied_coupon_id
-GROUP BY c.discount_type
-ORDER BY coupon_orders DESC;
-```
-
-| discount_type | coupon_orders | avg_paid_basket | avg_configured_discount_value |
-| --- | ---: | ---: | ---: |
-| percent | 5,225 | ₹7,531.73 | 16.96 |
-| fixed | 1,436 | ₹7,377.94 | 14.47 |
-| free_shipping | 1,367 | ₹7,327.84 | 17.19 |
-| BOGO | 913 | ₹7,665.64 | 16.21 |
-
-**Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
-
-**Next check**: Compare each customer's redemptions with the applicable coupon's `max_uses_per_customer` and validity dates. To assess margin, obtain the realized order-level discount and product costs; to establish whether coupons cause extra orders, use a randomized holdout or credible counterfactual.
-
----
-
-## 7. Coupon Eligibility and Usage-Limit Check
+## 6. Coupon Eligibility and Usage-Limit Check
 
 This query checks the three first-time codes for repeat-order use, redemptions outside the configured validity dates, and redemptions beyond the overall or per-customer usage limits. It treats `ends_at` as inclusive; confirm that matches the promotion rules. Historical validity is evaluated from the order timestamp rather than the coupon's current `is_active` value.
 
@@ -344,6 +304,46 @@ ORDER BY coupon_code;
 | WELCOME15 | 167 | 126 | 1 | 7 | 6 | 0 |
 
 **Observation**: Across the three codes, 5 of 516 redemptions (0.97%) fell outside the configured validity dates, and 16 (3.10%) exceeded the per-customer cap. No redemptions exceeded the overall coupon-use caps. The per-code customer counts sum to 15 coupon-customer combinations; the same person may appear under more than one code. Repeat-order use remains high (397 of 516, 76.94%), but repeat use is only a violation if the offer terms require a customer's first-ever order. Confirm those terms and inspect the flagged orders before calling all repeat use leakage.
+
+---
+
+## Interim Conclusion: Findings Through Promo-Code Repeat Redemptions
+
+Coupon use is widespread across segments, and the observed basket values differ only descriptively: coupon orders average 1.9% higher in the Incremental-labeled segments and 3.2% lower in the Cannibalization-labeled segments. These comparisons do not establish whether coupons created demand or reduced profit.
+
+The repeat-redemption analysis found that 397 of 516 uses of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%) were on repeat orders. This warrants an eligibility review, especially for WELCOME10 (80.34% repeat use), but does not by itself prove policy violations; the offer terms and per-customer limits must be checked.
+
+**Follow-up**: Section 6 checks repeat redemptions against configured per-customer and validity limits. To settle whether coupons create incremental demand, use a randomized holdout and compare order rate and contribution after actual discount and product costs.
+
+---
+
+## 7. Coupon Type: Basket Size and Configured Discount
+
+The coupon table contains `discount_type` and `discount_value`. The latter is the configured value, not necessarily the amount actually applied to an order. Its units can differ by discount type, so it should not be summed as discount cost.
+
+```sql
+SELECT
+    c.discount_type,
+    COUNT(DISTINCT o.order_id) AS coupon_orders,
+    ROUND(AVG(o.total), 2) AS avg_paid_basket,
+    ROUND(AVG(c.discount_value), 2) AS avg_configured_discount_value
+FROM ecom.orders AS o
+JOIN ecom.coupons AS c
+    ON c.coupon_id = o.applied_coupon_id
+GROUP BY c.discount_type
+ORDER BY coupon_orders DESC;
+```
+
+| discount_type | coupon_orders | avg_paid_basket | avg_configured_discount_value |
+| --- | ---: | ---: | ---: |
+| percent | 5,225 | ₹7,531.73 | 16.96 |
+| fixed | 1,436 | ₹7,377.94 | 14.47 |
+| free_shipping | 1,367 | ₹7,327.84 | 17.19 |
+| BOGO | 913 | ₹7,665.64 | 16.21 |
+
+**Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
+
+**Next check**: Compare each customer's redemptions with the applicable coupon's `max_uses_per_customer` and validity dates. To assess margin, obtain the realized order-level discount and product costs; to establish whether coupons cause extra orders, use a randomized holdout or credible counterfactual.
 
 ---
 
