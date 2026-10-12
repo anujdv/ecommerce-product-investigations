@@ -420,7 +420,16 @@ GROUP BY c.discount_type
 ORDER BY c.discount_type;
 ```
 
-The schema lookup did not find product unit cost or COGS fields. The order-level results do not yet quantify realized discount spend because every value is zero. The line-level reconciliation may locate the discount amounts, but margin still cannot be calculated without product costs. The available `prices.list_price` and `prices.sale_price` fields are selling prices, not product costs. A randomized holdout is still required to estimate whether discounts cause additional orders.
+| discount_type | coupon_orders | order_discount_total | line_discount_total | order_vs_line_difference | orders_with_difference |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| BOGO | 913 | ₹0 | ₹0 | ₹0 | 0 |
+| fixed | 1,436 | ₹0 | ₹0 | ₹0 | 0 |
+| free_shipping | 1,367 | ₹0 | ₹0 | ₹0 | 0 |
+| percent | 5,225 | ₹0 | ₹0 | ₹0 | 0 |
+
+**Observation**: Order-level and line-level discount totals match exactly, with no orders showing a difference. However, both fields are zero across all 8,941 coupon orders. This means these fields provide no recorded realized discount amount for this analysis; it should not be interpreted as proof that redeemed coupons had no economic cost. Confirm where the applied discount is stored before calculating discount spend or margin.
+
+The schema lookup did not find product unit cost or COGS fields. The order- and line-level fields reconcile, but both report zero discounts for every coupon order. The realized discount amount therefore remains unavailable in these fields, and margin also cannot be calculated without product costs. The available `prices.list_price` and `prices.sale_price` fields are selling prices, not product costs. A randomized holdout is still required to estimate whether discounts cause additional orders.
 ---
 
 ## 8. Conclusion
@@ -429,6 +438,6 @@ The schema lookup did not find product unit cost or COGS fields. The order-level
 
 The strongest operational signal is repeat use of the three first-time codes: 397 of 516 redemptions (76.94%) were on repeat orders. The eligibility check found 16 redemptions over per-customer limits, 5 outside configured validity dates, and none over overall use caps. Confirm whether the offers required a customer's first-ever order, and review the flagged redemptions; do not treat all repeat use as a confirmed violation.
 
-Basket values also vary by coupon type, with BOGO orders highest and free-shipping orders lowest in this sample. These differences do not show which offer type is more profitable. The recorded `orders.discount` is zero for all 8,941 coupon orders. The `order_items.line_discount` totals have not yet been reconciled, and product costs were not found, so actual discount spend and margin remain unverified.
+Basket values also vary by coupon type, with BOGO orders highest and free-shipping orders lowest in this sample. These differences do not show which offer type is more profitable. Both `orders.discount` and `order_items.line_discount` are zero across all 8,941 coupon orders and reconcile with no differences. This does not prove coupons had no cost; the source of realized discount amounts still needs to be confirmed. Product costs were not found, so margin remains unverified.
 
 **Recommendation:** Do not claim that coupons are net-positive or that the full repeat-redemption share is leakage based on these results. First confirm offer eligibility and resolve the flagged exceptions. Then run a randomized coupon holdout and compare order rate and contribution per assigned customer after actual discounts and product costs, once product costs are available. That is the evidence needed to decide whether coupons create enough incremental demand to pay for the subsidy.
