@@ -230,7 +230,7 @@ Coupon use is widespread across segments, and the observed basket values differ 
 
 The repeat-redemption analysis found that 397 of 516 uses of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%) were on repeat orders. This warrants an eligibility review, especially for WELCOME10 (80.34% repeat use), but does not by itself prove policy violations; the offer terms and per-customer limits must be checked.
 
-**Recommended next step**: Compare each customer's redemptions with the applicable coupon's eligibility rules, validity dates, and `max_uses_per_customer`. To settle whether coupons create incremental demand, use a randomized holdout and compare order rate and contribution after actual discount and product costs.
+**Follow-up**: Section 7 checks repeat redemptions against configured per-customer and validity limits. To settle whether coupons create incremental demand, use a randomized holdout and compare order rate and contribution after actual discount and product costs.
 
 ---
 
@@ -261,3 +261,99 @@ ORDER BY coupon_orders DESC;
 **Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
 
 **Next check**: Compare each customer's redemptions with the applicable coupon's `max_uses_per_customer` and validity dates. To assess margin, obtain the realized order-level discount and product costs; to establish whether coupons cause extra orders, use a randomized holdout or credible counterfactual.
+
+---
+
+## 7. Coupon Eligibility and Usage-Limit Check
+
+This query checks the three first-time codes for repeat-order use, redemptions outside the configured validity dates, and redemptions beyond the overall or per-customer usage limits. It treats `ends_at` as inclusive; confirm that matches the promotion rules. Historical validity is evaluated from the order timestamp rather than the coupon's current `is_active` value.
+
+```sql
+WITH ranked_orders AS (
+    SELECT
+        o.order_id,
+        o.customer_id,
+        o.created_at,
+        o.applied_coupon_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY o.customer_id
+            ORDER BY o.created_at, o.order_id
+        ) AS customer_order_number
+    FROM ecom.orders o
+),
+coupon_redemptions AS (
+    SELECT
+        ro.order_id,
+        ro.customer_id,
+        ro.created_at,
+        ro.customer_order_number,
+        c.coupon_id,
+        UPPER(c.code) AS coupon_code,
+        c.max_uses,
+        c.max_uses_per_customer,
+        CASE
+            WHEN c.starts_at IS NOT NULL
+                 AND ro.created_at < c.starts_at THEN TRUE
+            WHEN c.ends_at IS NOT NULL
+                 AND ro.created_at > c.ends_at THEN TRUE
+            ELSE FALSE
+        END AS outside_valid_dates,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.coupon_id
+            ORDER BY ro.created_at, ro.order_id
+        ) AS coupon_use_number,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.coupon_id, ro.customer_id
+            ORDER BY ro.created_at, ro.order_id
+        ) AS customer_coupon_use_number
+    FROM ranked_orders ro
+    JOIN ecom.coupons c
+        ON c.coupon_id = ro.applied_coupon_id
+    WHERE UPPER(c.code) IN ('WELCOME10', 'WELCOME15', 'FIRSTBUY')
+)
+SELECT
+    coupon_code,
+    COUNT(*) AS redemptions,
+    COUNT(*) FILTER (
+        WHERE customer_order_number > 1
+    ) AS repeat_order_redemptions,
+    COUNT(*) FILTER (
+        WHERE outside_valid_dates
+    ) AS redemptions_outside_valid_dates,
+    COUNT(*) FILTER (
+        WHERE max_uses_per_customer IS NOT NULL
+          AND customer_coupon_use_number > max_uses_per_customer
+    ) AS redemptions_over_customer_limit,
+    COUNT(DISTINCT customer_id) FILTER (
+        WHERE max_uses_per_customer IS NOT NULL
+          AND customer_coupon_use_number > max_uses_per_customer
+    ) AS customers_over_customer_limit,
+    COUNT(*) FILTER (
+        WHERE max_uses IS NOT NULL
+          AND coupon_use_number > max_uses
+    ) AS redemptions_over_coupon_limit
+FROM coupon_redemptions
+GROUP BY coupon_code
+ORDER BY coupon_code;
+```
+
+| coupon_code | redemptions | repeat_order_redemptions | redemptions_outside_valid_dates | redemptions_over_customer_limit | customers_over_customer_limit | redemptions_over_coupon_limit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| FIRSTBUY | 171 | 128 | 1 | 2 | 2 | 0 |
+| WELCOME10 | 178 | 143 | 3 | 7 | 7 | 0 |
+| WELCOME15 | 167 | 126 | 1 | 7 | 6 | 0 |
+
+**Observation**: Across the three codes, 5 of 516 redemptions (0.97%) fell outside the configured validity dates, and 16 (3.10%) exceeded the per-customer cap. No redemptions exceeded the overall coupon-use caps. The per-code customer counts sum to 15 coupon-customer combinations; the same person may appear under more than one code. Repeat-order use remains high (397 of 516, 76.94%), but repeat use is only a violation if the offer terms require a customer's first-ever order. Confirm those terms and inspect the flagged orders before calling all repeat use leakage.
+
+---
+
+## 8. Overall Conclusion
+
+The analysis identifies patterns and possible control issues, but it does not yet settle whether discounts create net-new demand or subsidize orders that would have happened anyway.
+
+Coupon redemption rates are relatively similar across segments. Coupon orders have a 1.9% higher observed average order value in the Incremental-labeled group and a 3.2% lower observed average in the Cannibalization-labeled group, but these are uncontrolled comparisons and order value is not profit. Coupon-type basket averages also vary descriptively; BOGO has the highest average paid basket, while configured discount values do not measure realized discount cost or margin.
+
+The clearest operational finding is that 76.94% of redemptions of FIRSTBUY, WELCOME10, and WELCOME15 were on repeat orders. The usage-limit check found 16 redemptions over per-customer caps, 5 outside validity dates, and none over overall coupon caps. Thus, repeat use warrants eligibility review, while the specific cap/date exceptions should be investigated and corrected. Repeat-order status alone does not prove a rule was broken.
+
+**Next step**: Confirm that these codes were restricted to first-time customers, review the flagged redemption records and validity-boundary rules, then measure causal impact with a randomized holdout. Compare order rate and contribution after actual discounts and product costs. Until that test is run, report the business impact as inconclusive rather than claiming net lift or margin loss.
+
