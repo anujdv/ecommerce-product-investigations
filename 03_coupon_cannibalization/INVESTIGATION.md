@@ -354,29 +354,64 @@ ORDER BY coupon_orders DESC;
 
 **Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
 
-**Next check**: The customer usage-limit and validity-date check is completed in Section 6. To assess margin by coupon type, locate the fields for the discount actually applied to each order and the product cost. The coupon's `discount_value` is only the configured offer value, not necessarily the realized discount.
-
-Use this schema lookup in Metabase to find likely discount and cost fields:
+**Next check**: The schema exposes realized order discounts in `orders.discount` and line-level discounts in `order_items.line_discount`. Use the first query to summarize recorded discount spend by coupon type, and the second to check whether the order and line totals reconcile. The percentage calculation assumes `orders.total` is the amount paid after discounts. Confirm that definition in the database.
 
 ```sql
 SELECT
-    table_schema,
-    table_name,
-    column_name,
-    data_type
-FROM information_schema.columns
-WHERE table_schema = 'ecom'
-  AND (
-      column_name ILIKE '%discount%'
-      OR column_name ILIKE '%cost%'
-      OR column_name ILIKE '%cogs%'
-      OR column_name ILIKE '%price%'
-  )
-ORDER BY table_name, ordinal_position;
+    c.discount_type,
+    COUNT(DISTINCT o.order_id) AS coupon_orders,
+    ROUND(AVG(o.total), 2) AS avg_paid_basket,
+    ROUND(AVG(o.discount), 2) AS avg_recorded_discount,
+    ROUND(SUM(o.discount), 2) AS total_recorded_discount,
+    COUNT(*) FILTER (WHERE o.discount IS NULL) AS orders_missing_discount,
+    ROUND(
+        100.0 * SUM(o.discount)
+        / NULLIF(SUM(o.total + o.discount), 0),
+        2
+    ) AS recorded_discount_pct_of_pre_discount_value
+FROM ecom.orders o
+JOIN ecom.coupons c
+    ON c.coupon_id = o.applied_coupon_id
+GROUP BY c.discount_type
+ORDER BY total_recorded_discount DESC;
 ```
 
-Once those fields are identified, calculate contribution by coupon type as paid revenue minus realized discounts and product costs, then compare similar products and customer groups. A randomized holdout is still needed to determine whether coupons cause additional orders.
+Reconcile the recorded order discount to the sum of line discounts:
 
+```sql
+WITH line_discounts AS (
+    SELECT
+        oi.order_id,
+        SUM(COALESCE(oi.line_discount, 0)) AS summed_line_discount
+    FROM ecom.order_items oi
+    GROUP BY oi.order_id
+)
+SELECT
+    c.discount_type,
+    COUNT(DISTINCT o.order_id) AS coupon_orders,
+    ROUND(SUM(COALESCE(o.discount, 0)), 2) AS order_discount_total,
+    ROUND(SUM(COALESCE(ld.summed_line_discount, 0)), 2) AS line_discount_total,
+    ROUND(
+        SUM(COALESCE(o.discount, 0))
+        - SUM(COALESCE(ld.summed_line_discount, 0)),
+        2
+    ) AS order_vs_line_difference,
+    COUNT(*) FILTER (
+        WHERE ABS(
+            COALESCE(o.discount, 0)
+            - COALESCE(ld.summed_line_discount, 0)
+        ) > 0.01
+    ) AS orders_with_difference
+FROM ecom.orders o
+JOIN ecom.coupons c
+    ON c.coupon_id = o.applied_coupon_id
+LEFT JOIN line_discounts ld
+    ON ld.order_id = o.order_id
+GROUP BY c.discount_type
+ORDER BY c.discount_type;
+```
+
+The schema lookup did not find product unit cost or COGS fields. These queries can quantify and validate discount spend, but they cannot calculate margin without product costs. The available `prices.list_price` and `prices.sale_price` fields are selling prices, not product costs. A randomized holdout is still required to estimate whether discounts cause additional orders.
 ---
 
 ## 8. Conclusion
@@ -385,6 +420,6 @@ Once those fields are identified, calculate contribution by coupon type as paid 
 
 The strongest operational signal is repeat use of the three first-time codes: 397 of 516 redemptions (76.94%) were on repeat orders. The eligibility check found 16 redemptions over per-customer limits, 5 outside configured validity dates, and none over overall use caps. Confirm whether the offers required a customer's first-ever order, and review the flagged redemptions; do not treat all repeat use as a confirmed violation.
 
-Basket values also vary by coupon type, with BOGO orders highest and free-shipping orders lowest in this sample. These differences do not show which offer type is more profitable: configured coupon values are not realized discounts, and the analysis does not include product costs.
+Basket values also vary by coupon type, with BOGO orders highest and free-shipping orders lowest in this sample. These differences do not show which offer type is more profitable. The schema exposes recorded order and line discounts, but their totals still need to be summarized and reconciled; product costs were not found.
 
-**Recommendation:** Do not claim that coupons are net-positive or that the full repeat-redemption share is leakage based on these results. First confirm offer eligibility and resolve the flagged exceptions. Then run a randomized coupon holdout and compare order rate and contribution per assigned customer after actual discounts and product costs. That is the evidence needed to decide whether coupons create enough incremental demand to pay for the subsidy.
+**Recommendation:** Do not claim that coupons are net-positive or that the full repeat-redemption share is leakage based on these results. First confirm offer eligibility and resolve the flagged exceptions. Then run a randomized coupon holdout and compare order rate and contribution per assigned customer after actual discounts and product costs, once product costs are available. That is the evidence needed to decide whether coupons create enough incremental demand to pay for the subsidy.
