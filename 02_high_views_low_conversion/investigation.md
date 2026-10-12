@@ -566,7 +566,7 @@ The product shortlist was used to focus the review and price checks on ten highe
 
 ### SQL: review and price-list summary for the ten selected products
 
-```
+```sql
 WITH targets(product_id) AS (
     VALUES
         (801), (2883), (3257), (1048), (1273),
@@ -651,8 +651,6 @@ ORDER BY c.category_name, p.product_id, ps.currency;
 
 | category_name | product_id | product_name | review_count | average_rating | price_list_name | currency | variant_price_count | avg_list_price | avg_sale_price | avg_discount_pct | variants_sale_above_list |
 | --- | ---: | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| category_name | product_id | product_name | review_count | average_rating | price_list_name | currency | variant_price_count | avg_list_price | avg_sale_price | avg_discount_pct | variants_sale_above_list |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Accessories | 127 | Ivory & Oak Classic Canvas Tote | 2 | 4.5 | INDIA | INR | 1 | 599 | 524.12 | 12.5 | 0 |
 | Accessories | 127 | Ivory & Oak Classic Canvas Tote | 2 | 4.5 | US | USD | 1 | 7.17 |  |  | 0 |
 | Bedding | 3,002 | Cedarline Percale Cotton Bedsheet Set | 3 | 4 | INDIA | INR | 5 | 1,899 |  |  | 0 |
@@ -676,7 +674,7 @@ ORDER BY c.category_name, p.product_id, ps.currency;
 
 ### SQL: retrieve review text
 
-```
+```sql
 SELECT
     c.category_name,
     p.product_id,
@@ -732,7 +730,7 @@ The event schema shows that product_view and add_to_cart have product and varian
 
 ### SQL: product funnel compared with category peers
 
-```
+```sql
 WITH targets(product_id) AS (
     VALUES
         (801), (2883), (3257), (1048), (1273),
