@@ -307,13 +307,13 @@ ORDER BY coupon_code;
 
 ---
 
-## Interim Conclusion: Findings Through Promo-Code Repeat Redemptions
+## Interim Conclusion: Segment and Coupon Eligibility Findings
 
-Coupon use is widespread across segments, and the observed basket values differ only descriptively: coupon orders average 1.9% higher in the Incremental-labeled segments and 3.2% lower in the Cannibalization-labeled segments. These comparisons do not establish whether coupons created demand or reduced profit.
+Coupon orders have a slightly higher observed average order value in the Incremental-labeled segments (+1.9%) and a lower average in the Cannibalization-labeled segments (−3.2%). These are descriptive differences; they do not establish that coupons caused extra orders or reduced profit.
 
-The repeat-redemption analysis found that 397 of 516 uses of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%) were on repeat orders. This warrants an eligibility review, especially for WELCOME10 (80.34% repeat use), but does not by itself prove policy violations; the offer terms and per-customer limits must be checked.
+Repeat orders account for 397 of 516 redemptions of FIRSTBUY, WELCOME10, and WELCOME15 (76.94%). The usage-limit check found 16 redemptions above per-customer caps, 5 outside the configured validity dates, and none above the overall coupon-use caps. Repeat-order use alone is not a violation unless the offer terms restrict redemption to a customer's first order.
 
-**Follow-up**: Section 6 checks repeat redemptions against configured per-customer and validity limits. To settle whether coupons create incremental demand, use a randomized holdout and compare order rate and contribution after actual discount and product costs.
+These checks identify eligibility exceptions to review, but the central question—whether discounts create net-new demand or subsidize existing orders—remains unanswered. A randomized holdout measuring order rate and contribution after actual discounts and product costs is needed to estimate that impact.
 
 ---
 
