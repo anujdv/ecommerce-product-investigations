@@ -354,7 +354,7 @@ ORDER BY coupon_orders DESC;
 
 **Observation**: Percent coupons account for the most coupon orders (5,225 of 8,941; 58.44%). BOGO orders have the highest average paid basket (₹7,665.64), while free-shipping orders have the lowest (₹7,327.84), a difference of ₹337.80 (about 4.61%). This is descriptive: it does not show that BOGO caused larger baskets, since customer and product mix may differ. The configured discount values are not realized discount amounts and may use different units, so these results cannot establish which type has the best margin impact.
 
-**Next check**: The schema exposes realized order discounts in `orders.discount` and line-level discounts in `order_items.line_discount`. Use the first query to summarize recorded discount spend by coupon type, and the second to check whether the order and line totals reconcile. The percentage calculation assumes `orders.total` is the amount paid after discounts. Confirm that definition in the database.
+**Next check**: The schema exposes `orders.discount` and line-level `order_items.line_discount`. The first query's results are now included below; the order-level field is zero for every coupon order. Run the second query to check whether line discounts contain the realized amounts and whether they reconcile to the order field. The percentage calculation assumes `orders.total` is the amount paid after discounts. Confirm that definition in the database.
 
 ```sql
 SELECT
@@ -375,6 +375,15 @@ JOIN ecom.coupons c
 GROUP BY c.discount_type
 ORDER BY total_recorded_discount DESC;
 ```
+
+| discount_type | coupon_orders | avg_paid_basket | avg_recorded_discount | total_recorded_discount | orders_missing_discount | recorded_discount_pct_of_pre_discount_value |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| BOGO | 913 | ₹7,665.64 | ₹0 | ₹0 | 0 | 0 |
+| fixed | 1,436 | ₹7,377.94 | ₹0 | ₹0 | 0 | 0 |
+| free_shipping | 1,367 | ₹7,327.84 | ₹0 | ₹0 | 0 | 0 |
+| percent | 5,225 | ₹7,531.73 | ₹0 | ₹0 | 0 | 0 |
+
+**Observation**: The `orders.discount` field is zero for all 8,941 coupon orders, with no nulls. This does not demonstrate that the coupons cost nothing; it suggests the order-level field is not capturing the realized coupon discounts (or its semantics need confirmation). Check `order_items.line_discount` before drawing a cost conclusion.
 
 Reconcile the recorded order discount to the sum of line discounts:
 
@@ -411,7 +420,7 @@ GROUP BY c.discount_type
 ORDER BY c.discount_type;
 ```
 
-The schema lookup did not find product unit cost or COGS fields. These queries can quantify and validate discount spend, but they cannot calculate margin without product costs. The available `prices.list_price` and `prices.sale_price` fields are selling prices, not product costs. A randomized holdout is still required to estimate whether discounts cause additional orders.
+The schema lookup did not find product unit cost or COGS fields. The order-level results do not yet quantify realized discount spend because every value is zero. The line-level reconciliation may locate the discount amounts, but margin still cannot be calculated without product costs. The available `prices.list_price` and `prices.sale_price` fields are selling prices, not product costs. A randomized holdout is still required to estimate whether discounts cause additional orders.
 ---
 
 ## 8. Conclusion
