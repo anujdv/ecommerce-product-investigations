@@ -111,6 +111,14 @@ The current event fields do not establish a reliable “aha moment.” Conversio
 - Channel-by-quartile and time-bucket cells are small, making individual rates unstable.
 - `employee_count` quartiles are relative to this ended-trial cohort, not standard company-size categories.
 - “No recorded event” may mean missing instrumentation or an incomplete proxy, not necessarily no product value.
-- The event inventory included timestamps through March 2027, later than the project date used for this analysis. Confirm the event time range and data clock before using broad time-trend comparisons.
+- The event inventory included timestamps through March 2027, later than the analysis date of October 2026. Confirm the event time range and data clock before using broad time-trend comparisons.
 
 Next, validate which `feature_id` or event represents meaningful first value with the product definition, then rerun the time-to-value analysis against that milestone.
+
+## Query Files
+
+- [Trial conversion baseline](queries/01_trial_conversion_baseline.sql)
+- [Event type inventory](queries/01_event_inventory.sql)
+- [Conversion by channel and team-size quartile](queries/02_conversion_by_channel_and_team_size.sql)
+- [Feature-use IDs](queries/03_event_inventory_for_first_value.sql)
+- [Compare candidate first-value milestones](queries/04_compare_candidate_milestones.sql)
