@@ -1,4 +1,4 @@
 SELECT
-    *
+	*
 FROM
-    ecom.customer_segments ;
+	ecom.customer_segments ;
