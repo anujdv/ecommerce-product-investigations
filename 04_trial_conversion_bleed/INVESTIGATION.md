@@ -12,6 +12,23 @@ Segment trial-to-paid conversion by acquisition channel, account team size, and 
 
 A trial is counted as mature when `ends_at < CURRENT_TIMESTAMP`. A mature trial is converted when `converted_at` is populated.
 
+### SQL
+
+```sql
+SELECT
+    COUNT(*) AS ended_trials,
+    COUNT(*) FILTER (WHERE converted_at IS NOT NULL) AS converted_trials,
+    COUNT(*) FILTER (WHERE converted_at IS NULL) AS not_converted_trials,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE converted_at IS NOT NULL)
+        / NULLIF(COUNT(*), 0), 2) AS trial_to_paid_conversion_pct,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE converted_at IS NULL)
+        / NULLIF(COUNT(*), 0), 2) AS trial_dropoff_pct
+FROM saas.trials
+WHERE ends_at < CURRENT_TIMESTAMP;
+```
+
+### Output
+
 | ended_trials | converted_trials | not_converted_trials | conversion_pct | dropoff_pct |
 | ---: | ---: | ---: | ---: | ---: |
 | 250 | 113 | 137 | 45.20 | 54.80 |
@@ -23,6 +40,30 @@ The observed drop-off is 54.8%, 5.2 percentage points below the approximate 60% 
 ## 2. Conversion by Acquisition Channel
 
 Channel is taken from `saas.accounts.acquisition_channel`.
+
+### SQL
+
+```sql
+WITH mature_trials AS (
+    SELECT t.trial_id, t.converted_at,
+           COALESCE(a.acquisition_channel, 'Unknown') AS acquisition_channel
+    FROM saas.trials AS t
+    JOIN saas.accounts AS a ON a.account_id = t.account_id
+    WHERE t.ends_at < CURRENT_TIMESTAMP
+)
+SELECT
+    acquisition_channel,
+    COUNT(*) AS ended_trials,
+    COUNT(*) FILTER (WHERE converted_at IS NOT NULL) AS converted_trials,
+    COUNT(*) FILTER (WHERE converted_at IS NULL) AS not_converted_trials,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE converted_at IS NOT NULL)
+        / NULLIF(COUNT(*), 0), 2) AS conversion_pct
+FROM mature_trials
+GROUP BY acquisition_channel
+ORDER BY ended_trials DESC;
+```
+
+### Output
 
 | acquisition_channel | ended_trials | converted_trials | not_converted_trials | conversion_pct |
 | --- | ---: | ---: | ---: | ---: |
@@ -36,9 +77,59 @@ Organic and referral show the highest observed conversion rates; outbound and G2
 
 ---
 
-## 3. Conversion by Team Size
+## 3. Conversion by Team Size and Channel
 
 Team size uses `saas.accounts.employee_count`. To avoid inventing fixed company-size bands, ended trials were divided into four employee-count quartiles. The interpolated cutoffs were Q1 = 97, Q2 = 291.5, and Q3 = 790.75 employees. Tied values stay in the same quartile, so group counts can differ slightly.
+
+### SQL
+
+```sql
+WITH mature_trials AS (
+    SELECT t.trial_id, t.converted_at, a.employee_count,
+           COALESCE(a.acquisition_channel, 'Unknown') AS acquisition_channel
+    FROM saas.trials AS t
+    JOIN saas.accounts AS a ON a.account_id = t.account_id
+    WHERE t.ends_at < CURRENT_TIMESTAMP
+),
+cutoffs AS (
+    SELECT
+        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY employee_count) AS q1,
+        PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY employee_count) AS q2,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY employee_count) AS q3
+    FROM mature_trials
+    WHERE employee_count IS NOT NULL
+),
+bucketed AS (
+    SELECT mt.*, c.q1, c.q2, c.q3,
+        CASE
+            WHEN mt.employee_count IS NULL THEN 'Unknown'
+            WHEN mt.employee_count <= c.q1 THEN 'Q1 (smallest)'
+            WHEN mt.employee_count <= c.q2 THEN 'Q2'
+            WHEN mt.employee_count <= c.q3 THEN 'Q3'
+            ELSE 'Q4 (largest)'
+        END AS team_size_quartile
+    FROM mature_trials AS mt
+    CROSS JOIN cutoffs AS c
+)
+SELECT
+    team_size_quartile,
+    acquisition_channel,
+    MIN(employee_count) AS min_employee_count,
+    MAX(employee_count) AS max_employee_count,
+    MAX(q1) AS q1_cutoff,
+    MAX(q2) AS q2_cutoff,
+    MAX(q3) AS q3_cutoff,
+    COUNT(*) AS ended_trials,
+    SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) AS converted_trials,
+    SUM(CASE WHEN converted_at IS NULL THEN 1 ELSE 0 END) AS not_converted_trials,
+    ROUND(100.0 * SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0), 2) AS conversion_pct
+FROM bucketed
+GROUP BY team_size_quartile, acquisition_channel
+ORDER BY team_size_quartile, acquisition_channel;
+```
+
+### Output: Overall by employee-count quartile
 
 | team_size_quartile | employee_count_range | ended_trials | converted_trials | not_converted_trials | conversion_pct |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -47,61 +138,99 @@ Team size uses `saas.accounts.employee_count`. To avoid inventing fixed company-
 | Q3 | 293–775 | 62 | 21 | 41 | 33.87 |
 | Q4 (largest) | 796–4,985 | 63 | 32 | 31 | 50.79 |
 
-Q3 is the low-conversion quartile at 33.9%, while the largest-account quartile converts at 50.8%. The pattern is not a steady increase or decrease with team size, so it does not support a simple “larger teams convert less” conclusion.
+Q3 is the low-conversion quartile at 33.9%, while the largest-account quartile converts at 50.8%. The pattern is not a steady increase or decrease with team size.
 
-### Channel mix within quartiles
+### Output: Channel within quartile
 
-| team_size_quartile | channel | ended_trials | converted_trials | conversion_pct |
-| --- | --- | ---: | ---: | ---: |
-| Q1 (smallest) | g2 | 15 | 7 | 46.67 |
-| Q1 (smallest) | linkedin | 9 | 4 | 44.44 |
-| Q1 (smallest) | organic | 12 | 4 | 33.33 |
-| Q1 (smallest) | outbound | 15 | 10 | 66.67 |
-| Q1 (smallest) | referral | 12 | 4 | 33.33 |
-| Q2 | g2 | 17 | 7 | 41.18 |
-| Q2 | linkedin | 9 | 4 | 44.44 |
-| Q2 | organic | 12 | 10 | 83.33 |
-| Q2 | outbound | 9 | 2 | 22.22 |
-| Q2 | referral | 15 | 8 | 53.33 |
-| Q3 | g2 | 11 | 4 | 36.36 |
-| Q3 | linkedin | 11 | 4 | 36.36 |
-| Q3 | organic | 18 | 7 | 38.89 |
-| Q3 | outbound | 12 | 2 | 16.67 |
-| Q3 | referral | 10 | 4 | 40.00 |
-| Q4 (largest) | g2 | 18 | 7 | 38.89 |
-| Q4 (largest) | linkedin | 10 | 5 | 50.00 |
-| Q4 (largest) | organic | 9 | 5 | 55.56 |
-| Q4 (largest) | outbound | 13 | 6 | 46.15 |
-| Q4 (largest) | referral | 13 | 9 | 69.23 |
+| team_size_quartile | acquisition_channel | ended_trials | converted_trials | not_converted_trials | conversion_pct |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Q1 (smallest) | g2 | 15 | 7 | 8 | 46.67 |
+| Q1 (smallest) | linkedin | 9 | 4 | 5 | 44.44 |
+| Q1 (smallest) | organic | 12 | 4 | 8 | 33.33 |
+| Q1 (smallest) | outbound | 15 | 10 | 5 | 66.67 |
+| Q1 (smallest) | referral | 12 | 4 | 8 | 33.33 |
+| Q2 | g2 | 17 | 7 | 10 | 41.18 |
+| Q2 | linkedin | 9 | 4 | 5 | 44.44 |
+| Q2 | organic | 12 | 10 | 2 | 83.33 |
+| Q2 | outbound | 9 | 2 | 7 | 22.22 |
+| Q2 | referral | 15 | 8 | 7 | 53.33 |
+| Q3 | g2 | 11 | 4 | 7 | 36.36 |
+| Q3 | linkedin | 11 | 4 | 7 | 36.36 |
+| Q3 | organic | 18 | 7 | 11 | 38.89 |
+| Q3 | outbound | 12 | 2 | 10 | 16.67 |
+| Q3 | referral | 10 | 4 | 6 | 40.00 |
+| Q4 (largest) | g2 | 18 | 7 | 11 | 38.89 |
+| Q4 (largest) | linkedin | 10 | 5 | 5 | 50.00 |
+| Q4 (largest) | organic | 9 | 5 | 4 | 55.56 |
+| Q4 (largest) | outbound | 13 | 6 | 7 | 46.15 |
+| Q4 (largest) | referral | 13 | 9 | 4 | 69.23 |
 
-Q3 has a low rate across all channels, especially outbound (2/12, 16.7%). Its largest channel by trial count is organic (18/62); organic conversion there is 38.9%. This suggests channel mix alone does not account for Q3's lower rate. Individual cells are small (9–18 trials), so these are leads for follow-up.
+Q3 has a low rate across all channels, especially outbound (2/12, 16.7%). Its largest channel by trial count is organic (18/62); organic conversion there is 38.9%. Individual cells are small (9–18 trials), so these are leads for follow-up.
 
 ---
 
 ## 4. Time to First Value
 
-The event inventory showed `login`, `feature_use`, `dashboard_view`, `api_call`, `export`, `settings_change`, `invite_sent`, and `report_view`. `feature_use` was used as a broad working proxy for product value; `invite_sent` was compared as a collaboration milestone. The SQL counts an event only if it occurred after trial start and before both the trial end and conversion.
+The event inventory showed `login`, `feature_use`, `dashboard_view`, `api_call`, `export`, `settings_change`, `invite_sent`, and `report_view`. `feature_use` was used as a broad working proxy for product value; `invite_sent` was compared as a collaboration milestone. The milestone query counts an event only if it occurred after trial start and before both trial end and conversion.
 
-### Feature use
+### SQL: Event inventory
 
-Across the 250 ended trials, 110 (44%) had a recorded pre-conversion `feature_use`; 52 converted (47.3%). Of the 140 without a recorded event, 61 converted (43.6%). The overall difference is small and is not consistent across team-size quartiles:
+```sql
+SELECT
+    event_type,
+    COUNT(*) AS event_rows,
+    COUNT(DISTINCT account_id) AS accounts,
+    MIN(occurred_at) AS first_seen_at,
+    MAX(occurred_at) AS last_seen_at
+FROM saas.events
+GROUP BY event_type
+ORDER BY event_rows DESC;
+```
 
-| team_size_quartile | trials_with_feature_use | converted_with_feature_use | trials_without_feature_use | converted_without_feature_use |
-| --- | ---: | ---: | ---: | ---: |
-| Q1 (smallest) | 32 | 19 | 31 | 10 |
-| Q2 | 28 | 13 | 34 | 18 |
-| Q3 | 22 | 7 | 40 | 14 |
-| Q4 (largest) | 28 | 13 | 35 | 19 |
+### Output: Event inventory
 
-In Q3, conversion is 31.8% with a recorded feature use (7/22) and 35.0% without one (14/40). Many trials convert without a recorded `feature_use`, so this event alone does not identify activation reliably. Time-bucket-by-channel cells are small and do not show a consistent pattern.
+| event_type | event_rows | accounts | first_seen_at | last_seen_at |
+| --- | ---: | ---: | --- | --- |
+| login | 17,898 | 1,245 | Jan 1, 2024 6:13 AM | Mar 28, 2027 1:05 PM |
+| feature_use | 10,891 | 1,221 | Jan 1, 2024 7:28 AM | Feb 22, 2027 6:13 PM |
+| dashboard_view | 9,187 | 1,193 | Jan 1, 2024 12:23 AM | Jan 26, 2027 6:10 AM |
+| api_call | 5,428 | 1,157 | Jan 1, 2024 12:05 PM | Dec 22, 2026 7:24 PM |
+| export | 3,740 | 1,084 | Jan 1, 2024 3:59 AM | Nov 28, 2026 9:45 AM |
+| settings_change | 2,753 | 1,032 | Jan 1, 2024 6:47 PM | Nov 28, 2026 7:56 AM |
+| invite_sent | 2,344 | 1,020 | Jan 1, 2024 12:44 PM | Oct 16, 2026 5:04 AM |
+| report_view | 1,293 | 430 | Dec 23, 2024 3:27 AM | Sep 12, 2026 11:15 AM |
 
-### Invite sent
+### SQL: Compare first-value milestones
 
-Only 22 of 250 trials (8.8%) had a pre-conversion `invite_sent`. Eight converted (36.4%), compared with 105 of the 228 trials without a recorded invite (46.1%). Invitations appear too uncommon to serve as the primary first-value definition; sending one may be optional.
+The complete grouped query is maintained in [04_compare_candidate_milestones.sql](queries/04_compare_candidate_milestones.sql). It compares `feature_use` and `invite_sent`, buckets first-event time as Within 1 day, 1–3 days, 3–7 days, Over 7 days, or Milestone not reached, and segments by channel and team-size quartile. Events must occur during the trial and before conversion.
 
-### Interpretation
+### Output: Milestone summary
 
-The current event fields do not establish a reliable “aha moment.” Conversion does not consistently rise with earlier or recorded `feature_use`, and most trials have no `invite_sent`. Inspect `feature_id` and event properties with product context to identify a specific core action, then remeasure time from `trials.started_at` to that action.
+| milestone | trials_with_milestone | converted_with_milestone | conversion_with_milestone_pct | trials_without_milestone | converted_without_milestone | conversion_without_milestone_pct |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| feature_use | 110 | 52 | 47.3 | 140 | 61 | 43.6 |
+| invite_sent | 22 | 8 | 36.4 | 228 | 105 | 46.1 |
+
+For `feature_use`, the quartile counts (trials with event / conversions with event; trials without / conversions without) were Q1 32/19 and 31/10; Q2 28/13 and 34/18; Q3 22/7 and 40/14; Q4 28/13 and 35/19.
+
+The result does not show a consistent pattern: in Q3, conversion was 31.8% with recorded feature use (7/22) and 35.0% without one (14/40). Many trials convert without a recorded `feature_use`, so this event alone does not identify activation reliably. Invitations appear too uncommon to serve as the primary first-value definition; sending one may be optional. Time-bucket-by-channel cells are small.
+
+### SQL: Inspect feature IDs
+
+```sql
+SELECT
+    feature_id,
+    COUNT(*) AS event_rows,
+    COUNT(DISTINCT account_id) AS accounts,
+    MIN(occurred_at) AS first_seen_at,
+    MAX(occurred_at) AS last_seen_at
+FROM saas.events
+WHERE event_type = 'feature_use'
+GROUP BY feature_id
+ORDER BY event_rows DESC;
+```
+
+Output was not included in the analysis results available for this investigation. Map these IDs through `saas.features` and confirm which represent core value before selecting an activation event.
 
 ---
 
