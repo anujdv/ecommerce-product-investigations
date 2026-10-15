@@ -672,6 +672,10 @@ ORDER BY c.category_name, p.product_id, ps.currency;
 | Tops | 1,273 | Indigo Lane Origins Essential Crop Top | 2 | 5 | INDIA | INR | 4 | 661.5 | 633.42 | 15.43 | 0 |
 | Tops | 1,273 | Indigo Lane Origins Essential Crop Top | 2 | 5 | US | USD | 4 | 7.92 | 7.61 | 15.41 | 0 |
 
+### Interpreting `variants_sale_above_list`
+
+This count is a pricing sanity check: it flags product variants whose active sale price is higher than their list price, which could indicate inconsistent pricing data or a confusing sale. A value of 0 means no such variants were found in the price snapshot used here; it does not show whether the product is competitively priced. All ten selected products have a value of 0 in the results above.
+
 ### SQL: retrieve review text
 
 ```sql
