@@ -129,17 +129,6 @@ GROUP BY team_size_quartile, acquisition_channel
 ORDER BY team_size_quartile, acquisition_channel;
 ```
 
-### Output: Overall by employee-count quartile
-
-| team_size_quartile | employee_count_range | ended_trials | converted_trials | not_converted_trials | conversion_pct |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Q1 (smallest) | 6–96 | 63 | 29 | 34 | 46.03 |
-| Q2 | 100–290 | 62 | 31 | 31 | 50.00 |
-| Q3 | 293–775 | 62 | 21 | 41 | 33.87 |
-| Q4 (largest) | 796–4,985 | 63 | 32 | 31 | 50.79 |
-
-Q3 is the low-conversion quartile at 33.9%, while the largest-account quartile converts at 50.8%. The pattern is not a steady increase or decrease with team size.
-
 ### Output: Channel within global employee-count quartiles
 
 The cutoff columns repeat the shared global thresholds used to assign quartiles. `min_employee_count` and `max_employee_count` show the observed range for each channel within that quartile.
