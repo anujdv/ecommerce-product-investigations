@@ -79,7 +79,7 @@ Organic and referral show the highest observed conversion rates; outbound and G2
 
 ## 3. Conversion by Team Size and Channel
 
-Team size uses `saas.accounts.employee_count`. To avoid inventing fixed company-size bands, ended trials were divided into four employee-count quartiles. The interpolated cutoffs were Q1 = 97, Q2 = 291.5, and Q3 = 790.75 employees. Tied values stay in the same quartile, so group counts can differ slightly.
+Team size uses `saas.accounts.employee_count`. To avoid inventing fixed company-size bands, ended trials were divided into four employee-count quartiles. The cutoffs (Q1 = 97, Q2 = 291.5, Q3 = 790.75 employees) are calculated once across all mature trials with a non-null employee count, regardless of acquisition channel. They are interpolated percentile cutoffs, and tied employee counts can make quartile sizes differ; in this cohort, the overall quartiles contain 62–63 trials.
 
 ### SQL
 
@@ -140,33 +140,34 @@ ORDER BY team_size_quartile, acquisition_channel;
 
 Q3 is the low-conversion quartile at 33.9%, while the largest-account quartile converts at 50.8%. The pattern is not a steady increase or decrease with team size.
 
-### Output: Channel within quartile
+### Output: Channel within global employee-count quartiles
 
-| team_size_quartile | acquisition_channel | ended_trials | converted_trials | not_converted_trials | conversion_pct |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Q1 (smallest) | g2 | 15 | 7 | 8 | 46.67 |
-| Q1 (smallest) | linkedin | 9 | 4 | 5 | 44.44 |
-| Q1 (smallest) | organic | 12 | 4 | 8 | 33.33 |
-| Q1 (smallest) | outbound | 15 | 10 | 5 | 66.67 |
-| Q1 (smallest) | referral | 12 | 4 | 8 | 33.33 |
-| Q2 | g2 | 17 | 7 | 10 | 41.18 |
-| Q2 | linkedin | 9 | 4 | 5 | 44.44 |
-| Q2 | organic | 12 | 10 | 2 | 83.33 |
-| Q2 | outbound | 9 | 2 | 7 | 22.22 |
-| Q2 | referral | 15 | 8 | 7 | 53.33 |
-| Q3 | g2 | 11 | 4 | 7 | 36.36 |
-| Q3 | linkedin | 11 | 4 | 7 | 36.36 |
-| Q3 | organic | 18 | 7 | 11 | 38.89 |
-| Q3 | outbound | 12 | 2 | 10 | 16.67 |
-| Q3 | referral | 10 | 4 | 6 | 40.00 |
-| Q4 (largest) | g2 | 18 | 7 | 11 | 38.89 |
-| Q4 (largest) | linkedin | 10 | 5 | 5 | 50.00 |
-| Q4 (largest) | organic | 9 | 5 | 4 | 55.56 |
-| Q4 (largest) | outbound | 13 | 6 | 7 | 46.15 |
-| Q4 (largest) | referral | 13 | 9 | 4 | 69.23 |
+The cutoff columns repeat the shared global thresholds used to assign quartiles. `min_employee_count` and `max_employee_count` show the observed range for each channel within that quartile.
 
-Q3 has a low rate across all channels, especially outbound (2/12, 16.7%). Its largest channel by trial count is organic (18/62); organic conversion there is 38.9%. Individual cells are small (9–18 trials), so these are leads for follow-up.
+| team_size_quartile | acquisition_channel | min_employee_count | max_employee_count | q1_cutoff | q2_cutoff | q3_cutoff | ended_trials | converted_trials | not_converted_trials | conversion_pct |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Q1 (smallest) | g2 | 14 | 88 | 97 | 291.5 | 790.75 | 15 | 7 | 8 | 46.67 |
+| Q1 (smallest) | linkedin | 7 | 60 | 97 | 291.5 | 790.75 | 9 | 4 | 5 | 44.44 |
+| Q1 (smallest) | organic | 7 | 77 | 97 | 291.5 | 790.75 | 12 | 4 | 8 | 33.33 |
+| Q1 (smallest) | outbound | 6 | 96 | 97 | 291.5 | 790.75 | 15 | 10 | 5 | 66.67 |
+| Q1 (smallest) | referral | 9 | 86 | 97 | 291.5 | 790.75 | 12 | 4 | 8 | 33.33 |
+| Q2 | g2 | 100 | 289 | 97 | 291.5 | 790.75 | 17 | 7 | 10 | 41.18 |
+| Q2 | linkedin | 121 | 250 | 97 | 291.5 | 790.75 | 9 | 4 | 5 | 44.44 |
+| Q2 | organic | 115 | 253 | 97 | 291.5 | 790.75 | 12 | 10 | 2 | 83.33 |
+| Q2 | outbound | 135 | 262 | 97 | 291.5 | 790.75 | 9 | 2 | 7 | 22.22 |
+| Q2 | referral | 100 | 290 | 97 | 291.5 | 790.75 | 15 | 8 | 7 | 53.33 |
+| Q3 | g2 | 306 | 772 | 97 | 291.5 | 790.75 | 11 | 4 | 7 | 36.36 |
+| Q3 | linkedin | 317 | 743 | 97 | 291.5 | 790.75 | 11 | 4 | 7 | 36.36 |
+| Q3 | organic | 304 | 775 | 97 | 291.5 | 790.75 | 18 | 7 | 11 | 38.89 |
+| Q3 | outbound | 306 | 772 | 97 | 291.5 | 790.75 | 12 | 2 | 10 | 16.67 |
+| Q3 | referral | 293 | 760 | 97 | 291.5 | 790.75 | 10 | 4 | 6 | 40.00 |
+| Q4 (largest) | g2 | 796 | 4,052 | 97 | 291.5 | 790.75 | 18 | 7 | 11 | 38.89 |
+| Q4 (largest) | linkedin | 830 | 4,368 | 97 | 291.5 | 790.75 | 10 | 5 | 5 | 50.00 |
+| Q4 (largest) | organic | 840 | 4,896 | 97 | 291.5 | 790.75 | 9 | 5 | 4 | 55.56 |
+| Q4 (largest) | outbound | 851 | 4,310 | 97 | 291.5 | 790.75 | 13 | 6 | 7 | 46.15 |
+| Q4 (largest) | referral | 920 | 4,985 | 97 | 291.5 | 790.75 | 13 | 9 | 4 | 69.23 |
 
+Q3 has the lowest overall conversion rate (21/62, 33.9%). Within Q3, observed channel rates range from 16.7% for outbound (2/12) to 40.0% for referral (4/10). Individual channel-by-quartile cells contain only 9–18 trials, so treat these rates as exploratory leads for follow-up.
 ---
 
 ## 4. Time to First Value
