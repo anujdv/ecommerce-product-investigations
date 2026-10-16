@@ -169,3 +169,195 @@ The channel-by-quartile breakdown does not show a consistent relationship betwee
 Some trials converted in the “Milestone not reached” category. For example, Q1 outbound had 7 conversions among 11 such trials (63.64%). Here, “not reached” means no qualifying `feature_use` event was recorded before conversion and trial end; it does not prove that the customer received no value. The event may be optional, may be an incomplete proxy for value, or may occur after conversion.
 
 Treat these results as inconclusive. Before drawing conclusions about activation, map `feature_id` values to product actions and confirm which event represents meaningful first value. Then rerun the comparison using that validated milestone. In the output, render the “3–7 days” bucket with an en dash; the displayed “3â€“7 days” is a text-encoding issue.
+
+### SQL: Time to first `feature_use`
+
+```sql
+WITH mature_trials AS (
+    SELECT
+        t.trial_id,
+        t.account_id,
+        t.started_at,
+        t.ends_at,
+        t.converted_at,
+        a.employee_count,
+        COALESCE(a.acquisition_channel, 'Unknown') AS acquisition_channel
+    FROM saas.trials AS t
+    JOIN saas.accounts AS a
+        ON a.account_id = t.account_id
+    WHERE t.ends_at < CURRENT_TIMESTAMP
+),
+cutoffs AS (
+    SELECT
+        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY employee_count) AS q1,
+        PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY employee_count) AS q2,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY employee_count) AS q3
+    FROM mature_trials
+    WHERE employee_count IS NOT NULL
+),
+trial_first_value AS (
+    SELECT
+        mt.*,
+        c.q1,
+        c.q2,
+        c.q3,
+        MIN(e.occurred_at) AS first_value_at
+    FROM mature_trials AS mt
+    CROSS JOIN cutoffs AS c
+    LEFT JOIN saas.events AS e
+        ON e.account_id = mt.account_id
+       AND e.event_type = 'feature_use'
+       AND e.occurred_at >= mt.started_at
+       AND e.occurred_at < mt.ends_at
+       AND (
+            mt.converted_at IS NULL
+            OR e.occurred_at < mt.converted_at
+       )
+    GROUP BY
+        mt.trial_id,
+        mt.account_id,
+        mt.started_at,
+        mt.ends_at,
+        mt.converted_at,
+        mt.employee_count,
+        mt.acquisition_channel,
+        c.q1,
+        c.q2,
+        c.q3
+),
+bucketed AS (
+    SELECT
+        *,
+        CASE
+            WHEN employee_count IS NULL THEN 'Unknown'
+            WHEN employee_count <= q1 THEN 'Q1 (smallest)'
+            WHEN employee_count <= q2 THEN 'Q2'
+            WHEN employee_count <= q3 THEN 'Q3'
+            ELSE 'Q4 (largest)'
+        END AS team_size_quartile,
+        CASE
+            WHEN first_value_at IS NULL THEN 'Milestone not reached'
+            WHEN first_value_at - started_at <= INTERVAL '1 day'
+                THEN 'Within 1 day'
+            WHEN first_value_at - started_at <= INTERVAL '3 days'
+                THEN '1–3 days'
+            WHEN first_value_at - started_at <= INTERVAL '7 days'
+                THEN '3–7 days'
+            ELSE 'Over 7 days'
+        END AS time_to_first_value
+    FROM trial_first_value
+)
+SELECT
+    team_size_quartile,
+    acquisition_channel,
+    time_to_first_value,
+    COUNT(*) AS ended_trials,
+    COUNT(*) FILTER (WHERE first_value_at IS NOT NULL)
+        AS trials_reaching_milestone,
+    COUNT(*) FILTER (WHERE converted_at IS NOT NULL)
+        AS converted_trials,
+    ROUND(
+        100.0 * COUNT(*) FILTER (WHERE converted_at IS NOT NULL)
+        / NULLIF(COUNT(*), 0),
+        2
+    ) AS conversion_pct,
+    ROUND(
+        AVG(EXTRACT(EPOCH FROM (first_value_at - started_at)) / 86400.0),
+        2
+    ) AS avg_days_to_first_value
+FROM bucketed
+GROUP BY
+    team_size_quartile,
+    acquisition_channel,
+    time_to_first_value
+ORDER BY
+    team_size_quartile,
+    acquisition_channel,
+    time_to_first_value;
+```
+
+### Output: Time to first `feature_use`
+
+The “Milestone not reached” group has no qualifying `feature_use` event before conversion or trial end. Blank average-time values are NULL because no milestone time was observed.
+
+| team_size_quartile | acquisition_channel | time_to_first_value | ended_trials | trials_reaching_milestone | converted_trials | conversion_pct | avg_days_to_first_value |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Q1 (smallest) | g2 | 3–7 days | 3 | 3 | 2 | 66.67 | 4.39 |
+| Q1 (smallest) | g2 | Milestone not reached | 6 | 0 | 0 | 0 |  |
+| Q1 (smallest) | g2 | Over 7 days | 3 | 3 | 2 | 66.67 | 10.66 |
+| Q1 (smallest) | g2 | Within 1 day | 3 | 3 | 3 | 100 | 0.58 |
+| Q1 (smallest) | linkedin | 1–3 days | 1 | 1 | 1 | 100 | 1.51 |
+| Q1 (smallest) | linkedin | 3–7 days | 2 | 2 | 1 | 50 | 6.59 |
+| Q1 (smallest) | linkedin | Milestone not reached | 4 | 0 | 2 | 50 |  |
+| Q1 (smallest) | linkedin | Over 7 days | 1 | 1 | 0 | 0 | 7.22 |
+| Q1 (smallest) | linkedin | Within 1 day | 1 | 1 | 0 | 0 | 0.33 |
+| Q1 (smallest) | organic | 1–3 days | 4 | 4 | 2 | 50 | 2.32 |
+| Q1 (smallest) | organic | 3–7 days | 3 | 3 | 2 | 66.67 | 4.41 |
+| Q1 (smallest) | organic | Milestone not reached | 5 | 0 | 0 | 0 |  |
+| Q1 (smallest) | outbound | 3–7 days | 3 | 3 | 2 | 66.67 | 4.9 |
+| Q1 (smallest) | outbound | Milestone not reached | 11 | 0 | 7 | 63.64 |  |
+| Q1 (smallest) | outbound | Within 1 day | 1 | 1 | 1 | 100 | 0.53 |
+| Q1 (smallest) | referral | 1–3 days | 1 | 1 | 0 | 0 | 2.31 |
+| Q1 (smallest) | referral | 3–7 days | 2 | 2 | 2 | 100 | 3.64 |
+| Q1 (smallest) | referral | Milestone not reached | 5 | 0 | 1 | 20 |  |
+| Q1 (smallest) | referral | Over 7 days | 3 | 3 | 0 | 0 | 11.12 |
+| Q1 (smallest) | referral | Within 1 day | 1 | 1 | 1 | 100 | 0.37 |
+| Q2 | g2 | 1–3 days | 5 | 5 | 3 | 60 | 2.32 |
+| Q2 | g2 | 3–7 days | 3 | 3 | 2 | 66.67 | 5.44 |
+| Q2 | g2 | Milestone not reached | 6 | 0 | 2 | 33.33 |  |
+| Q2 | g2 | Over 7 days | 1 | 1 | 0 | 0 | 8.24 |
+| Q2 | g2 | Within 1 day | 2 | 2 | 0 | 0 | 0.47 |
+| Q2 | linkedin | 3–7 days | 2 | 2 | 1 | 50 | 5.54 |
+| Q2 | linkedin | Milestone not reached | 6 | 0 | 3 | 50 |  |
+| Q2 | linkedin | Over 7 days | 1 | 1 | 0 | 0 | 13.84 |
+| Q2 | organic | 1–3 days | 2 | 2 | 2 | 100 | 2.38 |
+| Q2 | organic | Milestone not reached | 9 | 0 | 7 | 77.78 |  |
+| Q2 | organic | Over 7 days | 1 | 1 | 1 | 100 | 7.89 |
+| Q2 | outbound | Milestone not reached | 4 | 0 | 2 | 50 |  |
+| Q2 | outbound | Over 7 days | 4 | 4 | 0 | 0 | 11.26 |
+| Q2 | outbound | Within 1 day | 1 | 1 | 0 | 0 | 0.38 |
+| Q2 | referral | 3–7 days | 3 | 3 | 2 | 66.67 | 4.5 |
+| Q2 | referral | Milestone not reached | 9 | 0 | 4 | 44.44 |  |
+| Q2 | referral | Over 7 days | 2 | 2 | 1 | 50 | 9.15 |
+| Q2 | referral | Within 1 day | 1 | 1 | 1 | 100 | 0.55 |
+| Q3 | g2 | 1–3 days | 1 | 1 | 0 | 0 | 1.87 |
+| Q3 | g2 | 3–7 days | 1 | 1 | 0 | 0 | 6.56 |
+| Q3 | g2 | Milestone not reached | 7 | 0 | 3 | 42.86 |  |
+| Q3 | g2 | Over 7 days | 2 | 2 | 1 | 50 | 8.83 |
+| Q3 | linkedin | 1–3 days | 1 | 1 | 1 | 100 | 2.54 |
+| Q3 | linkedin | 3–7 days | 1 | 1 | 0 | 0 | 4.34 |
+| Q3 | linkedin | Milestone not reached | 5 | 0 | 2 | 40 |  |
+| Q3 | linkedin | Over 7 days | 2 | 2 | 1 | 50 | 8.6 |
+| Q3 | linkedin | Within 1 day | 2 | 2 | 0 | 0 | 0.53 |
+| Q3 | organic | 1–3 days | 1 | 1 | 0 | 0 | 1.7 |
+| Q3 | organic | Milestone not reached | 15 | 0 | 6 | 40 |  |
+| Q3 | organic | Over 7 days | 1 | 1 | 0 | 0 | 9.5 |
+| Q3 | organic | Within 1 day | 1 | 1 | 1 | 100 | 0.57 |
+| Q3 | outbound | 1–3 days | 1 | 1 | 1 | 100 | 1.25 |
+| Q3 | outbound | 3–7 days | 1 | 1 | 1 | 100 | 6.59 |
+| Q3 | outbound | Milestone not reached | 7 | 0 | 0 | 0 |  |
+| Q3 | outbound | Over 7 days | 3 | 3 | 0 | 0 | 10.95 |
+| Q3 | referral | 1–3 days | 1 | 1 | 0 | 0 | 1.69 |
+| Q3 | referral | 3–7 days | 1 | 1 | 0 | 0 | 4.71 |
+| Q3 | referral | Milestone not reached | 6 | 0 | 3 | 50 |  |
+| Q3 | referral | Over 7 days | 2 | 2 | 1 | 50 | 10.06 |
+| Q4 (largest) | g2 | 3–7 days | 2 | 2 | 0 | 0 | 3.97 |
+| Q4 (largest) | g2 | Milestone not reached | 11 | 0 | 4 | 36.36 |  |
+| Q4 (largest) | g2 | Over 7 days | 5 | 5 | 3 | 60 | 9.52 |
+| Q4 (largest) | linkedin | 1–3 days | 1 | 1 | 1 | 100 | 1.06 |
+| Q4 (largest) | linkedin | 3–7 days | 3 | 3 | 0 | 0 | 3.73 |
+| Q4 (largest) | linkedin | Milestone not reached | 5 | 0 | 3 | 60 |  |
+| Q4 (largest) | linkedin | Within 1 day | 1 | 1 | 1 | 100 | 0.64 |
+| Q4 (largest) | organic | 1–3 days | 1 | 1 | 0 | 0 | 2.54 |
+| Q4 (largest) | organic | 3–7 days | 1 | 1 | 1 | 100 | 5.24 |
+| Q4 (largest) | organic | Milestone not reached | 5 | 0 | 3 | 60 |  |
+| Q4 (largest) | organic | Over 7 days | 1 | 1 | 0 | 0 | 9.54 |
+| Q4 (largest) | organic | Within 1 day | 1 | 1 | 1 | 100 | 0.69 |
+| Q4 (largest) | outbound | 1–3 days | 1 | 1 | 0 | 0 | 2.39 |
+| Q4 (largest) | outbound | 3–7 days | 3 | 3 | 2 | 66.67 | 5.8 |
+| Q4 (largest) | outbound | Milestone not reached | 5 | 0 | 2 | 40 |  |
+| Q4 (largest) | outbound | Over 7 days | 3 | 3 | 1 | 33.33 | 10.71 |
+| Q4 (largest) | outbound | Within 1 day | 1 | 1 | 1 | 100 | 0.46 |
+| Q4 (largest) | referral | Milestone not reached | 9 | 0 | 7 | 77.78 |  |
+| Q4 (largest) | referral | Over 7 days | 3 | 3 | 2 | 66.67 | 9.08 |
+| Q4 (largest) | referral | Within 1 day | 1 | 1 | 0 | 0 | 1 |
