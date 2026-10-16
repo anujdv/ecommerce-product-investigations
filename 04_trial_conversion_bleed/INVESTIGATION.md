@@ -157,3 +157,15 @@ The cutoff columns repeat the shared global thresholds used to assign quartiles.
 | Q4 (largest) | referral | 920 | 4,985 | 97 | 291.5 | 790.75 | 13 | 9 | 4 | 69.23 |
 
 Q3 has the lowest overall conversion rate (21/62, 33.9%). Within Q3, observed channel rates range from 16.7% for outbound (2/12) to 40.0% for referral (4/10). Individual channel-by-quartile cells contain only 9–18 trials, so treat these rates as exploratory leads for follow-up.
+
+---
+
+## 4. Time to First Value (Preliminary)
+
+The candidate first-value event was `feature_use`. Across all mature trials, 110 trials recorded this event before conversion or trial end; 52 converted (47.3%). Of the 140 trials without a qualifying recorded event, 61 converted (43.6%). This small descriptive difference does not establish that reaching `feature_use` improves conversion.
+
+The channel-by-quartile breakdown does not show a consistent relationship between event timing and conversion. Rates vary across groups, and many cells contain only one to three trials, making percentages such as 100% in a one-trial cell highly unstable.
+
+Some trials converted in the “Milestone not reached” category. For example, Q1 outbound had 7 conversions among 11 such trials (63.64%). Here, “not reached” means no qualifying `feature_use` event was recorded before conversion and trial end; it does not prove that the customer received no value. The event may be optional, may be an incomplete proxy for value, or may occur after conversion.
+
+Treat these results as inconclusive. Before drawing conclusions about activation, map `feature_id` values to product actions and confirm which event represents meaningful first value. Then rerun the comparison using that validated milestone. In the output, render the “3–7 days” bucket with an en dash; the displayed “3â€“7 days” is a text-encoding issue.
