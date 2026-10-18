@@ -256,9 +256,9 @@ Query file: [`05_milestone_reach_conversion_summary.sql`](queries/05_milestone_r
 | milestone | trials with milestone | converted with milestone | conversion with milestone | trials without milestone | converted without milestone | conversion without milestone |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `feature_use` | 110 | 52 | 47.3% | 140 | 61 | 43.6% |
-| `invite_sent` | 22 | 8 | 36.4% | 228 | 105 | 46.1% |
+| `invite_sent` | 21 | 8 | 38.1% | 229 | 105 | 45.9% |
 
-The observed conversion difference is modest for `feature_use` (+3.7 percentage points) and negative for `invite_sent` (−9.7 points). These are descriptive comparisons, not evidence that either event causes conversion. `invite_sent` is uncommon and may be optional. The event is also required to occur before conversion to count as “with milestone,” so a trial that converts before recording the event appears in the “without” group.
+The observed conversion difference is modest for `feature_use` (+3.7 percentage points) and negative for `invite_sent` (−7.8 points). These are descriptive comparisons, not evidence that either event causes conversion. `invite_sent` is uncommon and may be optional. The event is also required to occur before conversion to count as “with milestone,” so a trial that converts before recording the event appears in the “without” group.
 
 The detailed channel-by-quartile timing table is in Appendix A. Its many cells contain only a few trials, so individual rates are unstable and do not form a consistent pattern. The “Milestone not reached” group includes converted trials; it means no qualifying event was recorded before conversion or trial end, not that the account received no value.
 
