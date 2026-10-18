@@ -4,20 +4,6 @@
 
 
 
-Product views
-session_events
-    ↓
-variant → product → category
-
-Purchases
-orders
-    ↓
-order_items
-    ↓
-variant → product → category
-
-
-
 ## 1. Category Purchase Baseline
 I counted distinct orders containing at least one product from each category.
 ```sql
