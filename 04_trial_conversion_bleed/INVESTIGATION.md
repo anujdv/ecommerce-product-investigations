@@ -251,6 +251,8 @@ GROUP BY milestone
 ORDER BY milestone;
 ```
 
+Query file: [`05_milestone_reach_conversion_summary.sql`](queries/05_milestone_reach_conversion_summary.sql).
+
 | milestone | trials with milestone | converted with milestone | conversion with milestone | trials without milestone | converted without milestone | conversion without milestone |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `feature_use` | 110 | 52 | 47.3% | 140 | 61 | 43.6% |
