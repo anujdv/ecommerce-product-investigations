@@ -264,7 +264,7 @@ The detailed channel-by-quartile timing table is in Appendix A. Its many cells c
 
 ### Conclusion
 
-Neither comparison identifies a reliable first-value signal or explains the overall trial drop-off. `feature_use` is associated with 47.3% conversion among the 110 trials that recorded it, versus 43.6% among the 140 without it, a modest descriptive difference of 3.7 percentage points. `invite_sent` is associated with 38.1% conversion among 21 trials, versus 45.9% among 229 without it. That lower observed rate does not mean invitations reduce conversion: invitation sending may be optional, the reached group is small, and trials that convert before an event are classified as having no milestone. The `feature_use` IDs also need to be mapped before treating the event as meaningful product value.
+The baseline is 54.8% non-conversion (137 of 250 mature trials), close to the task's approximate 60%. The current data does not establish a cause. The best working hypothesis is an activation gap—or an instrumentation gap that makes activation hard to see: 140 trials had no recorded `feature_use` before conversion or trial end. However, 61 of those trials still converted, and conversion differs by only 3.7 percentage points between trials with and without `feature_use` (47.3% vs. 43.6%). So this event is not yet a reliable explanation or predictor. `invite_sent` is even less conclusive: only 21 trials recorded it (38.1% converted, compared with 45.9% without it), and sending an invite may be optional. These are associations, not proof that missing activation causes non-conversion.
 
 ### Provisional early-warning rubric
 
@@ -278,7 +278,7 @@ The current `feature_use` event should not drive alerts until its feature IDs ar
 
 ### Recommendation
 
-Do not use `invite_sent` as a conversion predictor or early-warning trigger. First map `feature_id` values and validate one event as a core-value milestone. Then test a day-3 onboarding prompt in a controlled holdout among trials that have not reached that validated milestone, measuring both milestone completion and paid conversion before adopting the rubric.
+Map the `feature_id` values with the product team and confirm which event represents a customer completing a core workflow. If no event captures that action, instrument it. Then run a controlled test: offer a day-3 onboarding prompt to trials that have not reached the validated milestone, keep a holdout group, and compare activation and paid conversion. This tests the activation-gap hypothesis instead of assuming it is the cause. Do not use `invite_sent` as the trigger unless inviting teammates is confirmed as core product value.
 
 The detailed channel-by-quartile timing query is maintained in [`06_time_to_first_value_by_segment.sql`](queries/06_time_to_first_value_by_segment.sql).
 
