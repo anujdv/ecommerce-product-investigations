@@ -6,5 +6,6 @@ SELECT
 FROM ecom.orders
 WHERE created_at >= '2026-05-01'
   AND created_at < '2026-05-21'
+  AND payment_status = 'paid'
 GROUP BY DATE(created_at)
 ORDER BY order_date;
