@@ -7,7 +7,7 @@ Four completed investigations covering revenue reliability, product conversion, 
 - **[Scope 1 — Revenue cliff](01_revenue_cliff/INVESTIGATION.md):** May 13 paid revenue fell 62.9%; the incident coincided with a cross-gateway `GATEWAY_TIMEOUT` spike concentrated in UPI, while the underlying shared technical failure remains unconfirmed.
 - **[Scope 2 — High views, low conversion](02_high_views_low_conversion/INVESTIGATION.md):** No category has the hypothesized 3–5× imbalance; selected high-view products underperform category peers, but product-experience causes remain hypotheses.
 - **[Scope 3 — Coupon cannibalization](03_coupon_cannibalization/INVESTIGATION.md):** Correcting the join expanded matched orders from about 3.8k to 32,418; 76.94% of the audited first-time-code redemptions were repeat orders, but policy violations and incremental impact require confirmation.
-- **[Scope 4 — Trial conversion bleed](04_trial_conversion_bleed/INVESTIGATION.md):** Mature-trial conversion is 45.2% (113/250), so 54.8% did not convert; channel and team-size patterns are descriptive, and current first-value events do not explain the drop-off.
+- **[Scope 4 — Trial conversion bleed](04_trial_conversion_bleed/INVESTIGATION.md):** Mature-trial conversion is 45.2% (113/250), so 54.8% did not convert; channel and team-size patterns are descriptive; an activation or instrumentation gap is a working hypothesis, not a proven cause.
 
 ## KPI scorecard
 
