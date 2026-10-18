@@ -917,4 +917,10 @@ The ten selected products underperform their category peers across the observed 
 
 Review comments suggest possible fit, product-quality, texture/skin-reaction, and battery/charging concerns for some products. The review counts are small, so these are hypotheses rather than proven causes. Prices were evaluated separately by price list and currency using records valid on April 19, 2026; the available results do not establish a consistent price explanation.
 
-**Conclusion:** The analysis identifies a set of high-view products with much weaker purchase activity than same-category peers. It does not establish one causal explanation. Reviews point to potential product-experience issues for some SKUs, but stronger review, return, or customer-level evidence would be needed to confirm the reasons.
+### Key Takeaway
+
+The selected high-view products underperform their same-category peers at both view-to-cart and view-to-purchase. Across the ten products, view-to-cart ranges from 4.84% to 9.05%, versus 10.52% to 14.65% for their category peers. Cart-to-purchase ranges from 4.63% to 28.57%, versus 48.21% to 60.58% for peers. The two Makeup products have the sharpest cart-to-purchase gap: 5.23% and 4.63%, compared with 49.89% for Makeup peers. Their view-to-cart rates are also lower (5.94% and 6.22% versus 11.75%), so the data does not support saying they succeed at discovery and fail only inside the cart.
+
+This identifies where the observed funnel gap is largest; it does not isolate why it occurs. Shipping costs, stock or shade availability, checkout friction, and payment failures are possible hypotheses to test, not findings established by this query. Checkout-stage events lack product identifiers, so they cannot currently be attributed to these specific SKUs. The review evidence is also sparse and can suggest product-experience hypotheses only.
+
+**Conclusion:** The analysis identifies high-view products with weaker observed funnel performance than same-category peers, especially the two Makeup products at cart-to-purchase. It does not establish a single causal explanation. Next, validate the event/session attribution and investigate checkout-stage drop-offs at session level, while checking inventory and variant availability for the Makeup SKUs.
