@@ -129,6 +129,17 @@ GROUP BY team_size_quartile, acquisition_channel
 ORDER BY team_size_quartile, acquisition_channel;
 ```
 
+### Overall conversion by team-size quartile
+
+These are pooled trial conversion rates: converted trials divided by ended trials in each quartile. They summarize the channel rows below; they are not an unweighted average of channel percentages.
+
+| team_size_quartile | employee_count_range | ended_trials | converted_trials | not_converted_trials | conversion_pct |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Q1 (smallest) | 6–96 | 63 | 29 | 34 | 46.03 |
+| Q2 | 100–290 | 62 | 31 | 31 | 50.00 |
+| Q3 | 293–775 | 62 | 21 | 41 | 33.87 |
+| Q4 (largest) | 796–4,985 | 63 | 32 | 31 | 50.79 |
+
 ### Output: Channel within global employee-count quartiles
 
 The cutoff columns repeat the shared global thresholds used to assign quartiles. `min_employee_count` and `max_employee_count` show the observed range for each channel within that quartile.
@@ -161,6 +172,8 @@ Q3 has the lowest overall conversion rate (21/62, 33.9%). Within Q3, observed ch
 ---
 
 ## 4. Time to First Value
+
+This is the third segmentation dimension in the original task, after acquisition channel and team size. It is exploratory; it does not mean a reason for the trial drop-off has been established.
 
 Two candidate milestones were compared: `feature_use` and `invite_sent`. Events counted only when they occurred after trial start and before both conversion and trial end.
 
@@ -264,7 +277,7 @@ The detailed channel-by-quartile timing table is in Appendix A. Its many cells c
 
 ### Conclusion
 
-The baseline is 54.8% non-conversion (137 of 250 mature trials), close to the task's approximate 60%. The current data does not establish a cause. The best working hypothesis is an activation gap—or an instrumentation gap that makes activation hard to see: 140 trials had no recorded `feature_use` before conversion or trial end. However, 61 of those trials still converted, and conversion differs by only 3.7 percentage points between trials with and without `feature_use` (47.3% vs. 43.6%). So this event is not yet a reliable explanation or predictor. `invite_sent` is even less conclusive: only 21 trials recorded it (38.1% converted, compared with 45.9% without it), and sending an invite may be optional. These are associations, not proof that missing activation causes non-conversion.
+**Cause status: not established.** The baseline is 54.8% non-conversion (137 of 250 mature trials), close to the task's approximate 60%, but this investigation has not identified why those trials did not convert. A possible lead is an activation or instrumentation gap: 140 trials had no recorded `feature_use` before conversion or trial end. Yet 61 of those trials converted, and the rate difference is only 3.7 percentage points (47.3% vs. 43.6%), so the current event is weak evidence and not a demonstrated cause. `invite_sent` is less common (21 trials) and also does not explain the drop-off: 38.1% converted with a recorded invite versus 45.9% without. These are descriptive associations, not proof that missing activation causes non-conversion.
 
 ### Provisional early-warning rubric
 
