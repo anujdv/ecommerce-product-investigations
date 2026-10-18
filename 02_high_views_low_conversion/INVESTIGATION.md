@@ -1,6 +1,6 @@
 ## Central Question
 
-**Option 2 (High-Views, Low-Conversion Paradox — e-commerce):** Do any product categories receive 3–5× their share of product views compared with their share of purchases? If so, investigate whether price sensitivity, product quality or reviews, or browsing surfaces could explain the gap.
+ Do any product categories receive 3–5× their share of product views compared with their share of purchases? If so, investigate whether price sensitivity, product quality or reviews, or browsing surfaces could explain the gap.
 
 
 
