@@ -264,7 +264,7 @@ The detailed channel-by-quartile timing table is in Appendix A. Its many cells c
 
 ### Conclusion
 
-The data does not identify a reliable first-value signal or explain the overall trial drop-off. `feature_use` is only a candidate until its `feature_id` values are mapped to product actions. `invite_sent` appears too infrequent to serve as the primary activation milestone.
+Neither comparison identifies a reliable first-value signal or explains the overall trial drop-off. `feature_use` is associated with 47.3% conversion among the 110 trials that recorded it, versus 43.6% among the 140 without it, a modest descriptive difference of 3.7 percentage points. `invite_sent` is associated with 38.1% conversion among 21 trials, versus 45.9% among 229 without it. That lower observed rate does not mean invitations reduce conversion: invitation sending may be optional, the reached group is small, and trials that convert before an event are classified as having no milestone. The `feature_use` IDs also need to be mapped before treating the event as meaningful product value.
 
 ### Provisional early-warning rubric
 
@@ -278,7 +278,7 @@ The current `feature_use` event should not drive alerts until its feature IDs ar
 
 ### Recommendation
 
-Map the `feature_id` values, select and validate one core-value milestone, then run a controlled test of a day-3 onboarding prompt for trials that have not reached it. Measure milestone completion and paid conversion against a holdout before adopting the rubric.
+Do not use `invite_sent` as a conversion predictor or early-warning trigger. First map `feature_id` values and validate one event as a core-value milestone. Then test a day-3 onboarding prompt in a controlled holdout among trials that have not reached that validated milestone, measuring both milestone completion and paid conversion before adopting the rubric.
 
 The detailed channel-by-quartile timing query is maintained in [`06_time_to_first_value_by_segment.sql`](queries/06_time_to_first_value_by_segment.sql).
 
