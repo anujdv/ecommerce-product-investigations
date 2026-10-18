@@ -160,15 +160,44 @@ Q3 has the lowest overall conversion rate (21/62, 33.9%). Within Q3, observed ch
 
 ---
 
-## 4. Time to First Value (Preliminary)
+## 4. Time to First Value
 
-The candidate first-value event was `feature_use`. Across all mature trials, 110 trials recorded this event before conversion or trial end; 52 converted (47.3%). Of the 140 trials without a qualifying recorded event, 61 converted (43.6%). This small descriptive difference does not establish that reaching `feature_use` improves conversion.
+Two candidate milestones were compared: `feature_use` and `invite_sent`. Events counted only when they occurred after trial start and before both conversion and trial end.
 
-The channel-by-quartile breakdown does not show a consistent relationship between event timing and conversion. Rates vary across groups, and many cells contain only one to three trials, making percentages such as 100% in a one-trial cell highly unstable.
+| milestone | trials with milestone | converted with milestone | conversion with milestone | trials without milestone | converted without milestone | conversion without milestone |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `feature_use` | 110 | 52 | 47.3% | 140 | 61 | 43.6% |
+| `invite_sent` | 22 | 8 | 36.4% | 228 | 105 | 46.1% |
 
-Some trials converted in the “Milestone not reached” category. For example, Q1 outbound had 7 conversions among 11 such trials (63.64%). Here, “not reached” means no qualifying `feature_use` event was recorded before conversion and trial end; it does not prove that the customer received no value. The event may be optional, may be an incomplete proxy for value, or may occur after conversion.
+The observed conversion difference is modest for `feature_use` (+3.7 percentage points) and negative for `invite_sent` (−9.7 points). These are descriptive comparisons, not evidence that either event causes conversion. `invite_sent` is uncommon and may be optional. The event is also required to occur before conversion to count as “with milestone,” so a trial that converts before recording the event appears in the “without” group.
 
-Treat these results as inconclusive. Before drawing conclusions about activation, map `feature_id` values to product actions and confirm which event represents meaningful first value. Then rerun the comparison using that validated milestone. In the output, render the “3–7 days” bucket with an en dash; the displayed “3â€“7 days” is a text-encoding issue.
+The detailed channel-by-quartile timing table is in Appendix A. Its many cells contain only a few trials, so individual rates are unstable and do not form a consistent pattern. The “Milestone not reached” group includes converted trials; it means no qualifying event was recorded before conversion or trial end, not that the account received no value.
+
+### Conclusion
+
+The data does not identify a reliable first-value signal or explain the overall trial drop-off. `feature_use` is only a candidate until its `feature_id` values are mapped to product actions. `invite_sent` appears too infrequent to serve as the primary activation milestone.
+
+### Provisional early-warning rubric
+
+Use this only after validating and instrumenting a core-value event:
+
+- **Days 0–2:** allow normal setup time; do not flag an account solely for having no event yet.
+- **By day 3:** if no validated core-value event is recorded, mark the account for a low-friction check-in or onboarding prompt.
+- **By day 7:** if the event is still absent, prioritize a human onboarding review. Treat this as a support cue, not a prediction that the trial will fail.
+
+The current `feature_use` event should not drive alerts until its feature IDs are mapped and the event is confirmed to represent meaningful product value.
+
+### Recommendation
+
+Map the `feature_id` values, select and validate one core-value milestone, then run a controlled test of a day-3 onboarding prompt for trials that have not reached it. Measure milestone completion and paid conversion against a holdout before adopting the rubric.
+
+The candidate-milestone query is maintained in [`05_compare_candidate_milestones.sql`](queries/05_compare_candidate_milestones.sql).
+
+---
+
+## Appendix A: Detailed time-to-first-value breakdown
+
+The following query and output show the thin channel-by-quartile timing cells for `feature_use`. The “3–7 days” label is rendered with an en dash.
 
 ### SQL: Time to first `feature_use`
 
