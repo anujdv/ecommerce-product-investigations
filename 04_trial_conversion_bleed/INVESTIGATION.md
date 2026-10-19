@@ -273,7 +273,7 @@ Query file: [`05_milestone_reach_conversion_summary.sql`](queries/05_milestone_r
 
 The observed conversion difference is modest for `feature_use` (+3.7 percentage points) and negative for `invite_sent` (−7.8 points). These are descriptive comparisons, not evidence that either event causes conversion. `invite_sent` is uncommon and may be optional. The event is also required to occur before conversion to count as “with milestone,” so a trial that converts before recording the event appears in the “without” group.
 
-The detailed channel-by-quartile timing table is in Appendix A. Its many cells contain only a few trials, so individual rates are unstable and do not form a consistent pattern. The “Milestone not reached” group includes converted trials; it means no qualifying event was recorded before conversion or trial end, not that the account received no value.
+Appendix A breaks `feature_use` timing down by channel and team-size quartile. The results are mixed: in Q1/g2, all 3 trials recording the event within one day converted (3/3), while in Q1/LinkedIn, none of the 1 trial in that timing bucket converted (0/1). The table also shows 7 of 9 Q4/referral trials converted despite no qualifying `feature_use` event being recorded. These examples are based on very small cells and are not stable estimates; taken together, the table shows no consistent pattern that earlier `feature_use` corresponds to higher conversion. It does not identify the cause of trial drop-off. “Milestone not reached” means no qualifying event was recorded before conversion or trial end, not that the account received no value.
 
 ### Conclusion
 
